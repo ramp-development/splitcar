@@ -1,6 +1,7 @@
 # SplitDrive MVP Plan
 
 ## Project Status
+
 -  Next.js 16 project initialized with App Router
 -  Tailwind CSS v4 configured
 -  shadcn/ui components installed (New York style)
@@ -11,9 +12,11 @@
 - � Application features not implemented
 
 ## Overview
+
 Build a minimal, functional MVP of SplitDrive: a shared-car cost tracking app used by small groups on trips. The goal is to log fuel fills, track trip distances, calculate fair cost splits, and show who owes what.
 
 ## Tech Stack
+
 -  Next.js 16 (App Router, React 19.2)
 - � Supabase (database + phone number auth)
 -  Tailwind CSS v4 + shadcn/ui
@@ -21,6 +24,7 @@ Build a minimal, functional MVP of SplitDrive: a shared-car cost tracking app us
 ## Database Schema
 
 ### Users Table
+
 ```sql
 users (
   id uuid primary key,
@@ -31,6 +35,7 @@ users (
 ```
 
 ### Cars Table
+
 ```sql
 cars (
   id uuid primary key,
@@ -44,9 +49,11 @@ cars (
   created_at timestamp default now()
 )
 ```
+
 **Derived**: `costPerKm = avg_price_per_litre / efficiency_km_per_litre`
 
 ### Members Table
+
 ```sql
 members (
   id uuid primary key,
@@ -60,6 +67,7 @@ members (
 ```
 
 ### Fuel Fills Table
+
 ```sql
 fuel_fills (
   id uuid primary key,
@@ -71,6 +79,7 @@ fuel_fills (
 ```
 
 ### Trips Table
+
 ```sql
 trips (
   id uuid primary key,
@@ -81,9 +90,11 @@ trips (
   created_at timestamp default now()
 )
 ```
+
 **Derived**: `tripCost = distance_km * costPerKm`, split equally across passengers
 
 ### Settlements Table
+
 ```sql
 settlements (
   id uuid primary key,
@@ -96,7 +107,9 @@ settlements (
 ```
 
 ## Balance Calculation Logic
+
 For each member:
+
 ```
 netBalance = fuelPaid - tripUsage + settlementsReceived - settlementsSent
 
@@ -113,15 +126,15 @@ Where:
 ## Application Pages
 
 ### Authentication Flow
+
 - [x] `/login` - Phone number input
 - [x] `/verify` - OTP verification via Supabase Auth
 - [x] `/onboarding` - Collect user name (first-time only)
 
 ### Main Application
-- [x] `/dashboard` - Overview (or redirect to car setup if none exists)
-- [ ] `/car/setup` - Initial car creation form
-- [ ] `/car/settings` - Edit car details
-- [ ] `/members` - List members, add new members
+
+- [x] `/dashboard` - Overview with car setup dialog and navigation
+- [x] `/members` - List members, add new members
 - [ ] `/fuel` - List fuel fills, add new fill
 - [ ] `/trips` - List trips, add new trip
 - [ ] `/balances` - Show member balances, settlement actions
@@ -130,6 +143,7 @@ Where:
 ## Implementation Phases
 
 ### Phase 1: Supabase Setup ✅
+
 - [x] Create Supabase project
 - [x] Install `@supabase/supabase-js` and `@supabase/ssr`
 - [x] Configure environment variables
@@ -139,6 +153,7 @@ Where:
 - [x] Implement auth proxy middleware
 
 ### Phase 2: Authentication ✅
+
 - [x] Build login/OTP flow UI
 - [x] Create auth context/hooks
 - [x] Build phone input page
@@ -147,23 +162,28 @@ Where:
 - [x] Create dashboard placeholder
 - [x] Build onboarding page for name collection
 
-### Phase 3: Car & Members
-- [ ] Car setup form and creation
-- [ ] Members list and add functionality
-- [ ] Link members to users on sign-in
+### Phase 3: Car & Members ✅
+
+- [x] Car setup form and creation (as dialog on dashboard)
+- [x] Members list and add functionality
+- [x] Fixed RLS policies to prevent infinite recursion
+- [x] Refactored car form into reusable component
 
 ### Phase 4: Fuel & Trips
+
 - [ ] Fuel fills list and form
 - [ ] Trips list and form with passenger selection
 - [ ] Calculate and display trip costs
 
 ### Phase 5: Balances & Settlements
+
 - [ ] Calculate member balances
 - [ ] Display balance summary
 - [ ] Settlement recording form
 - [ ] Settlement history
 
 ## MVP Constraints
+
 - One car per user
 - Simple equal splits (no weighted splits)
 - Frontend-calculated balances (no complex DB queries)

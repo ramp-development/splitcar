@@ -4,8 +4,18 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import { toast } from "sonner";
 
 export default function VerifyPage() {
@@ -42,6 +52,13 @@ export default function VerifyPage() {
       });
 
       if (error) throw error;
+
+      // Link any members with this phone number to the user
+      await supabase
+        .from("members")
+        .update({ user_id: data.user?.id })
+        .eq("phone", phone)
+        .is("user_id", null);
 
       // Check if user has a name set
       const { data: userData } = await supabase
@@ -94,11 +111,7 @@ export default function VerifyPage() {
         <CardContent>
           <form onSubmit={handleVerifyOTP} className="space-y-6">
             <div className="flex justify-center">
-              <InputOTP
-                maxLength={6}
-                value={otp}
-                onChange={setOtp}
-              >
+              <InputOTP maxLength={6} value={otp} onChange={setOtp}>
                 <InputOTPGroup>
                   <InputOTPSlot index={0} />
                   <InputOTPSlot index={1} />
@@ -112,7 +125,11 @@ export default function VerifyPage() {
             <p className="text-center text-sm text-muted-foreground">
               For testing, use OTP: 123456
             </p>
-            <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || otp.length !== 6}
+            >
               {loading ? "Verifying..." : "Verify OTP"}
             </Button>
             <Button

@@ -11,35 +11,62 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CarSetupForm } from "@/components/car/car-setup-form";
 import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const [userName, setUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showCarSetup, setShowCarSetup] = useState(false);
+  const [hasCar, setHasCar] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   useEffect(() => {
     async function checkUserProfile() {
       if (!user) return;
 
-      const { data } = await supabase
+      const supabase = createClient();
+
+      // Check user profile
+      const { data: userData } = await supabase
         .from("users")
         .select("name")
         .eq("id", user.id)
         .single();
 
-      if (!data?.name) {
+      if (!userData?.name) {
         router.push("/onboarding");
-      } else {
-        setUserName(data.name);
+        return;
       }
+
+      // Check if user has a car
+      const { data: carData } = await supabase
+        .from("cars")
+        .select("id")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+
+      setUserName(userData.name);
+      setHasCar(!!carData);
+      setShowCarSetup(!carData);
       setLoading(false);
     }
 
     checkUserProfile();
-  }, [user, router, supabase]);
+  }, [user, router]);
+
+  const handleCarCreated = () => {
+    setShowCarSetup(false);
+    setHasCar(true);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -55,32 +82,84 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen p-8">
-      <div className="mx-auto max-w-4xl space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <Button variant="outline" onClick={handleSignOut}>
-            Sign Out
-          </Button>
-        </div>
+    <>
+      <Dialog open={showCarSetup} onOpenChange={setShowCarSetup}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Up Your Car</DialogTitle>
+            <DialogDescription>
+              Add your car details to start tracking expenses
+            </DialogDescription>
+          </DialogHeader>
+          {user && (
+            <CarSetupForm userId={user.id} onSuccess={handleCarCreated} />
+          )}
+        </DialogContent>
+      </Dialog>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Welcome back, {userName}!</CardTitle>
-            <CardDescription>
-              You&apos;re successfully authenticated
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Phone: {user?.phone}
-            </p>
-            <p className="mt-4 text-sm">
-              Dashboard features coming in Phase 3 & 4...
-            </p>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen p-8">
+        <div className="mx-auto max-w-4xl space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <Button variant="outline" onClick={handleSignOut}>
+              Sign Out
+            </Button>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Welcome back, {userName}!</CardTitle>
+              <CardDescription>Your SplitDrive overview</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <Button
+                  variant="outline"
+                  className="h-24 flex-col gap-2"
+                  onClick={() => router.push("/members")}
+                >
+                  <span className="text-2xl">👥</span>
+                  <span>Members</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-24 flex-col gap-2"
+                  onClick={() => router.push("/fuel")}
+                >
+                  <span className="text-2xl">⛽</span>
+                  <span>Fuel Fills</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-24 flex-col gap-2"
+                  onClick={() => router.push("/trips")}
+                >
+                  <span className="text-2xl">🚗</span>
+                  <span>Trips</span>
+                </Button>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Button
+                  variant="outline"
+                  className="h-24 flex-col gap-2"
+                  onClick={() => router.push("/balances")}
+                >
+                  <span className="text-2xl">💰</span>
+                  <span>Balances</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-24 flex-col gap-2"
+                  onClick={() => router.push("/settlements")}
+                >
+                  <span className="text-2xl">🤝</span>
+                  <span>Settlements</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
