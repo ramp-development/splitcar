@@ -47,58 +47,62 @@ export default function MembersPage() {
   });
   const { user } = useAuth();
   const router = useRouter();
-  const supabase = createClient();
 
   useEffect(() => {
-    loadMembers();
-  }, [user]);
+    async function loadMembers() {
+      if (!user) return;
 
-  async function loadMembers() {
-    if (!user) return;
+      const supabase = createClient();
 
-    try {
-      // Get user's car
-      const { data: carData } = await supabase
-        .from("cars")
-        .select("id")
-        .eq("owner_id", user.id)
-        .single();
+      try {
+        // Get user's car
+        const { data: carData } = await supabase
+          .from("cars")
+          .select("id")
+          .eq("owner_id", user.id)
+          .single();
 
-      if (!carData) {
-        router.push("/car/setup");
-        return;
+        if (!carData) {
+          router.push("/car/setup");
+          return;
+        }
+
+        setCarId(carData.id);
+
+        // Get members
+        const { data: membersData, error } = await supabase
+          .from("members")
+          .select("*")
+          .eq("car_id", carData.id);
+
+        if (error) throw error;
+
+        // Sort members: current user first, then by creation date
+        const sortedMembers = (membersData || []).sort((a, b) => {
+          if (a.user_id === user.id) return -1;
+          if (b.user_id === user.id) return 1;
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        });
+
+        setMembers(sortedMembers);
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to load members");
+      } finally {
+        setLoading(false);
       }
-
-      setCarId(carData.id);
-
-      // Get members
-      const { data: membersData, error } = await supabase
-        .from("members")
-        .select("*")
-        .eq("car_id", carData.id);
-
-      if (error) throw error;
-
-      // Sort members: current user first, then by creation date
-      const sortedMembers = (membersData || []).sort((a, b) => {
-        if (a.user_id === user.id) return -1;
-        if (b.user_id === user.id) return 1;
-        return (
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-      });
-
-      setMembers(sortedMembers);
-    } catch (error) {
-      toast.error("Failed to load members");
-    } finally {
-      setLoading(false);
     }
-  }
+
+    loadMembers();
+  }, [user, router]);
 
   async function handleAddMember(e: React.FormEvent) {
     e.preventDefault();
     if (!carId) return;
+
+    const supabase = createClient();
 
     try {
       const { error } = await supabase.from("members").insert({
@@ -113,7 +117,24 @@ export default function MembersPage() {
       toast.success("Member added!");
       setDialogOpen(false);
       setNewMember({ name: "", phone: "", isGuest: false });
-      loadMembers();
+
+      // Reload members
+      if (!user) return;
+
+      const { data: membersData } = await supabase
+        .from("members")
+        .select("*")
+        .eq("car_id", carId);
+
+      const sortedMembers = (membersData || []).sort((a, b) => {
+        if (a.user_id === user.id) return -1;
+        if (b.user_id === user.id) return 1;
+        return (
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      });
+
+      setMembers(sortedMembers);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to add member"

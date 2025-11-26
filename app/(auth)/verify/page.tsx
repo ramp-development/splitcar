@@ -93,6 +93,7 @@ export default function VerifyPage() {
       if (error) throw error;
       toast.success("OTP resent!");
     } catch (error) {
+      console.error(error);
       toast.error("Failed to resend OTP");
     } finally {
       setLoading(false);

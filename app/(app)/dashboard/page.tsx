@@ -20,12 +20,12 @@ import {
 } from "@/components/ui/dialog";
 import { CarSetupForm } from "@/components/car/car-setup-form";
 import { useRouter } from "next/navigation";
+import { ButtonGroup } from "@/components/ui/button-group";
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const [userName, setUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showCarSetup, setShowCarSetup] = useState(false);
   const [hasCar, setHasCar] = useState(false);
   const router = useRouter();
 
@@ -56,7 +56,6 @@ export default function DashboardPage() {
 
       setUserName(userData.name);
       setHasCar(!!carData);
-      setShowCarSetup(!carData);
       setLoading(false);
     }
 
@@ -64,7 +63,6 @@ export default function DashboardPage() {
   }, [user, router]);
 
   const handleCarCreated = () => {
-    setShowCarSetup(false);
     setHasCar(true);
   };
 
@@ -83,7 +81,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <Dialog open={showCarSetup} onOpenChange={setShowCarSetup}>
+      <Dialog open={!hasCar} onOpenChange={() => {}}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Set Up Your Car</DialogTitle>
@@ -100,7 +98,7 @@ export default function DashboardPage() {
       <div className="min-h-screen p-8">
         <div className="mx-auto max-w-4xl space-y-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <h1 className="text-2xl font-medium">Dashboard</h1>
             <Button variant="outline" onClick={handleSignOut}>
               Sign Out
             </Button>
