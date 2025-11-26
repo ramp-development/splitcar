@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
@@ -62,7 +68,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Welcome back, {userName}!</CardTitle>
             <CardDescription>
-              You're successfully authenticated
+              You&apos;re successfully authenticated
             </CardDescription>
           </CardHeader>
           <CardContent>
