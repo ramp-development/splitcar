@@ -5,17 +5,17 @@
 -  Tailwind CSS v4 configured
 -  shadcn/ui components installed (New York style)
 -  Custom hooks library added
-- ó Supabase integration pending
-- ó Authentication not implemented
-- ó Database schema not created
-- ó Application features not implemented
+- ï¿½ Supabase integration pending
+- ï¿½ Authentication not implemented
+- ï¿½ Database schema not created
+- ï¿½ Application features not implemented
 
 ## Overview
 Build a minimal, functional MVP of SplitDrive: a shared-car cost tracking app used by small groups on trips. The goal is to log fuel fills, track trip distances, calculate fair cost splits, and show who owes what.
 
 ## Tech Stack
 -  Next.js 16 (App Router, React 19.2)
-- ó Supabase (database + phone number auth)
+- ï¿½ Supabase (database + phone number auth)
 -  Tailwind CSS v4 + shadcn/ui
 
 ## Database Schema
@@ -113,11 +113,12 @@ Where:
 ## Application Pages
 
 ### Authentication Flow
-- [ ] `/login` - Phone number input
-- [ ] `/verify` - OTP verification via Supabase Auth
+- [x] `/login` - Phone number input
+- [x] `/verify` - OTP verification via Supabase Auth
+- [x] `/onboarding` - Collect user name (first-time only)
 
 ### Main Application
-- [ ] `/dashboard` - Overview (or redirect to car setup if none exists)
+- [x] `/dashboard` - Overview (or redirect to car setup if none exists)
 - [ ] `/car/setup` - Initial car creation form
 - [ ] `/car/settings` - Edit car details
 - [ ] `/members` - List members, add new members
@@ -128,18 +129,23 @@ Where:
 
 ## Implementation Phases
 
-### Phase 1: Supabase Setup
-- [ ] Create Supabase project
-- [ ] Install `@supabase/supabase-js` and `@supabase/ssr`
-- [ ] Configure environment variables
-- [ ] Create database tables with RLS policies
-- [ ] Set up phone auth provider
+### Phase 1: Supabase Setup âœ…
+- [x] Create Supabase project
+- [x] Install `@supabase/supabase-js` and `@supabase/ssr`
+- [x] Configure environment variables
+- [x] Create database tables with RLS policies
+- [x] Set up phone auth provider
+- [x] Create Supabase client utilities
+- [x] Implement auth proxy middleware
 
-### Phase 2: Authentication
-- [ ] Create Supabase client utilities
-- [ ] Build login/OTP flow
-- [ ] Implement auth middleware
-- [ ] Create protected route wrapper
+### Phase 2: Authentication âœ…
+- [x] Build login/OTP flow UI
+- [x] Create auth context/hooks
+- [x] Build phone input page
+- [x] Build OTP verification page
+- [x] Add AuthProvider and Toaster to layout
+- [x] Create dashboard placeholder
+- [x] Build onboarding page for name collection
 
 ### Phase 3: Car & Members
 - [ ] Car setup form and creation
