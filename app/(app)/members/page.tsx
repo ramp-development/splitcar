@@ -8,13 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -23,17 +16,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
-
-type Member = {
-  id: string;
-  name: string;
-  phone: string | null;
-  is_guest: boolean;
-  user_id: string | null;
-};
+import { DataTable } from "@/components/ui/data-table";
+import { createMemberColumns, Member } from "@/components/members/columns";
 
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -63,7 +49,7 @@ export default function MembersPage() {
           .single();
 
         if (!carData) {
-          router.push("/car/setup");
+          router.push("/dashboard");
           return;
         }
 
@@ -142,6 +128,54 @@ export default function MembersPage() {
     }
   }
 
+  async function handleRemoveMember(memberId: string) {
+    const supabase = createClient();
+
+    try {
+      const { error } = await supabase
+        .from("members")
+        .delete()
+        .eq("id", memberId);
+
+      if (error) throw error;
+
+      toast.success("Member removed");
+      setMembers(members.filter((m) => m.id !== memberId));
+    } catch (error) {
+      toast.error("Failed to remove member");
+      console.error(error);
+    }
+  }
+
+  async function handleToggleGuest(memberId: string, isGuest: boolean) {
+    const supabase = createClient();
+
+    try {
+      const { error } = await supabase
+        .from("members")
+        .update({ is_guest: isGuest })
+        .eq("id", memberId);
+
+      if (error) throw error;
+
+      toast.success(isGuest ? "Changed to guest" : "Changed to member");
+      setMembers(
+        members.map((m) =>
+          m.id === memberId ? { ...m, is_guest: isGuest } : m
+        )
+      );
+    } catch (error) {
+      toast.error("Failed to update member");
+      console.error(error);
+    }
+  }
+
+  const columns = createMemberColumns(
+    user?.id,
+    handleRemoveMember,
+    handleToggleGuest
+  );
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -152,105 +186,70 @@ export default function MembersPage() {
 
   return (
     <div className="p-6 md:p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Car Members</CardTitle>
-                <CardDescription>
-                  People who share this car and split costs
-                </CardDescription>
-              </div>
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
+      <div className="mx-auto max-w-6xl">
+        <DataTable
+          columns={columns}
+          data={members}
+          filterColumn="name"
+          filterPlaceholder="Filter by name..."
+          toolbarActions={
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Member
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Member</DialogTitle>
+                  <DialogDescription>
+                    Add someone who shares this car
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleAddMember} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="member-name">Name</Label>
+                    <Input
+                      id="member-name"
+                      value={newMember.name}
+                      onChange={(e) =>
+                        setNewMember({ ...newMember, name: e.target.value })
+                      }
+                      required
+                      placeholder="John Doe"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="member-phone">Phone (optional)</Label>
+                    <Input
+                      id="member-phone"
+                      type="tel"
+                      value={newMember.phone}
+                      onChange={(e) =>
+                        setNewMember({ ...newMember, phone: e.target.value })
+                      }
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="is-guest">Guest member</Label>
+                    <Switch
+                      id="is-guest"
+                      checked={newMember.isGuest}
+                      onCheckedChange={(checked) =>
+                        setNewMember({ ...newMember, isGuest: checked })
+                      }
+                    />
+                  </div>
+                  <Button type="submit" className="w-full">
                     Add Member
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Member</DialogTitle>
-                    <DialogDescription>
-                      Add someone who shares this car
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleAddMember} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="member-name">Name</Label>
-                      <Input
-                        id="member-name"
-                        value={newMember.name}
-                        onChange={(e) =>
-                          setNewMember({ ...newMember, name: e.target.value })
-                        }
-                        required
-                        placeholder="John Doe"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="member-phone">Phone (optional)</Label>
-                      <Input
-                        id="member-phone"
-                        type="tel"
-                        value={newMember.phone}
-                        onChange={(e) =>
-                          setNewMember({ ...newMember, phone: e.target.value })
-                        }
-                        placeholder="+1 (555) 123-4567"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="is-guest">Guest member</Label>
-                      <Switch
-                        id="is-guest"
-                        checked={newMember.isGuest}
-                        onCheckedChange={(checked) =>
-                          setNewMember({ ...newMember, isGuest: checked })
-                        }
-                      />
-                    </div>
-                    <Button type="submit" className="w-full">
-                      Add Member
-                    </Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {members.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">
-                No members yet. Add your first member to get started!
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {members.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between rounded-lg border p-4"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{member.name}</p>
-                      </div>
-                      {member.phone && (
-                        <p className="text-sm text-muted-foreground">
-                          {member.phone}
-                        </p>
-                      )}
-                    </div>
-                    {member.user_id === user?.id && (
-                      <Badge variant="secondary">You</Badge>
-                    )}
-                    {member.is_guest && <Badge variant="outline">Guest</Badge>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </form>
+              </DialogContent>
+            </Dialog>
+          }
+        />
       </div>
     </div>
   );
