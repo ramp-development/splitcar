@@ -1,0 +1,64 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+
+const routeNames: Record<string, string> = {
+  dashboard: "Dashboard",
+  members: "Members",
+  fuel: "Fuel Fills",
+  trips: "Trips",
+  balances: "Balances",
+  settlements: "Settlements",
+};
+
+export function AppBreadcrumb() {
+  const pathname = usePathname();
+  const segments = pathname.split("/").filter(Boolean);
+
+  if (segments.length === 0 || segments[0] === "dashboard") {
+    return null; // Don't show breadcrumbs on dashboard
+  }
+
+  return (
+    <div className="border-b bg-muted/20 px-4 py-3 md:px-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/dashboard">Dashboard</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          {segments.map((segment, index) => {
+            const isLast = index === segments.length - 1;
+            const href = `/${segments.slice(0, index + 1).join("/")}`;
+            const label = routeNames[segment] || segment;
+
+            return (
+              <span key={segment} className="contents">
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  {isLast ? (
+                    <BreadcrumbPage>{label}</BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink asChild>
+                      <Link href={href}>{label}</Link>
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+              </span>
+            );
+          })}
+        </BreadcrumbList>
+      </Breadcrumb>
+    </div>
+  );
+}

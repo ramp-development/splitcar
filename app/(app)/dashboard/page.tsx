@@ -20,10 +20,9 @@ import {
 } from "@/components/ui/dialog";
 import { CarSetupForm } from "@/components/car/car-setup-form";
 import { useRouter } from "next/navigation";
-import { ButtonGroup } from "@/components/ui/button-group";
 
 export default function DashboardPage() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [userName, setUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasCar, setHasCar] = useState(false);
@@ -66,11 +65,6 @@ export default function DashboardPage() {
     setHasCar(true);
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.push("/login");
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -95,15 +89,8 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="min-h-screen p-8">
-        <div className="mx-auto max-w-4xl space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-medium">Dashboard</h1>
-            <Button variant="outline" onClick={handleSignOut}>
-              Sign Out
-            </Button>
-          </div>
-
+      <div className="p-6 md:p-8">
+        <div className="mx-auto max-w-6xl space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Welcome back, {userName}!</CardTitle>

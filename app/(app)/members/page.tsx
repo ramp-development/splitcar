@@ -25,7 +25,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
 type Member = {
   id: string;
@@ -151,19 +151,8 @@ export default function MembersPage() {
   }
 
   return (
-    <div className="min-h-screen p-8">
-      <div className="mx-auto max-w-4xl space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/dashboard")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-3xl font-bold">Members</h1>
-        </div>
-
+    <div className="p-6 md:p-8">
+      <div className="mx-auto max-w-6xl space-y-6">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
