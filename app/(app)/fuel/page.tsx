@@ -18,7 +18,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -31,6 +33,8 @@ type Member = {
   id: string;
   name: string;
   archived: boolean;
+  user_id: string | null;
+  is_guest: boolean;
 };
 
 type Car = {
@@ -76,7 +80,7 @@ export default function FuelFillsPage() {
         // Get members (non-archived)
         const { data: membersData, error: membersError } = await supabase
           .from("members")
-          .select("id, name, archived")
+          .select("id, name, archived, user_id, is_guest")
           .eq("car_id", carData.id)
           .order("name");
 
@@ -257,6 +261,18 @@ export default function FuelFillsPage() {
   // Filter out archived members from selection
   const activeMembers = members.filter((m) => !m.archived);
 
+  // Find current user's member ID
+  const currentUserMemberId = members.find((m) => m.user_id === user?.id)?.id;
+
+  // Group members by type
+  const currentUser = activeMembers.find((m) => m.user_id === user?.id);
+  const otherMembers = activeMembers
+    .filter((m) => m.user_id !== user?.id && !m.is_guest)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const guestMembers = activeMembers
+    .filter((m) => m.is_guest)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -283,7 +299,17 @@ export default function FuelFillsPage() {
           }}
         >
           <DialogTrigger asChild>
-            <Button>
+            <Button
+              onClick={() => {
+                // Auto-select current user when opening dialog for new entry
+                if (!editingFuelFill && currentUserMemberId) {
+                  setFuelFillForm({
+                    payerMemberId: currentUserMemberId,
+                    amount: "",
+                  });
+                }
+              }}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Add Fuel Fill
             </Button>
@@ -313,11 +339,34 @@ export default function FuelFillsPage() {
                     <SelectValue placeholder="Select member" />
                   </SelectTrigger>
                   <SelectContent>
-                    {activeMembers.map((member) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.name}
-                      </SelectItem>
-                    ))}
+                    {currentUser && (
+                      <SelectGroup>
+                        <SelectLabel>You</SelectLabel>
+                        <SelectItem value={currentUser.id}>
+                          {currentUser.name}
+                        </SelectItem>
+                      </SelectGroup>
+                    )}
+                    {otherMembers.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Members</SelectLabel>
+                        {otherMembers.map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {guestMembers.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Guests</SelectLabel>
+                        {guestMembers.map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
