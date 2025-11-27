@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,10 +12,12 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function AppNavbar() {
   const { signOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleSignOut = async () => {
     await signOut();
@@ -33,39 +35,49 @@ export function AppNavbar() {
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
-                <Link href="/dashboard" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Dashboard
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink
+                  asChild
+                  active={pathname === "/dashboard"}
+                  className={navigationMenuTriggerStyle()}
+                >
+                  <Link href="/dashboard">Dashboard</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href="/members" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Members
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink
+                  asChild
+                  active={pathname === "/members"}
+                  className={navigationMenuTriggerStyle()}
+                >
+                  <Link href="/members">Members</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href="/fuel" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Fuel
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink
+                  asChild
+                  active={pathname === "/fuel"}
+                  className={navigationMenuTriggerStyle()}
+                >
+                  <Link href="/fuel">Fuel</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href="/trips" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Trips
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink
+                  asChild
+                  active={pathname === "/trips"}
+                  className={navigationMenuTriggerStyle()}
+                >
+                  <Link href="/trips">Trips</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href="/balances" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Balances
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink
+                  asChild
+                  active={pathname === "/balances"}
+                  className={navigationMenuTriggerStyle()}
+                >
+                  <Link href="/balances">Balances</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
