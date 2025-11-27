@@ -2,14 +2,18 @@
 
 ## Project Status
 
--  Next.js 16 project initialized with App Router
--  Tailwind CSS v4 configured
--  shadcn/ui components installed (New York style)
--  Custom hooks library added
-- � Supabase integration pending
-- � Authentication not implemented
-- � Database schema not created
-- � Application features not implemented
+- ✅ Next.js 16 project initialized with App Router
+- ✅ Tailwind CSS v4 configured
+- ✅ shadcn/ui components installed (New York style)
+- ✅ Custom hooks library added
+- ✅ Supabase integration complete
+- ✅ Authentication implemented with phone OTP
+- ✅ Database schema created with RLS policies
+- ✅ Navigation & layout components built
+- ✅ Reusable DataTable component created
+- ✅ Members page with archive functionality complete
+- 🚧 Fuel & Trips features pending
+- 🚧 Balances & Settlements pending
 
 ## Overview
 
@@ -17,9 +21,50 @@ Build a minimal, functional MVP of SplitDrive: a shared-car cost tracking app us
 
 ## Tech Stack
 
--  Next.js 16 (App Router, React 19.2)
-- � Supabase (database + phone number auth)
--  Tailwind CSS v4 + shadcn/ui
+- ✅ Next.js 16 (App Router, React 19.2)
+- ✅ Supabase (database + phone number auth)
+- ✅ Tailwind CSS v4 + shadcn/ui
+- ✅ @tanstack/react-table for data tables
+
+## Design Guidelines
+
+### Layout & Spacing
+
+- **Container**: All app pages use `(app)/layout.tsx` which provides navbar, breadcrumbs, and max-width container
+- **Page styling**: Only add `<div className="mx-auto max-w-6xl">` for content, no need for padding (handled by layout)
+- **No nested cards**: Avoid cards within cards - use simple headings and content directly
+- **Mobile-first**: Stack elements vertically on mobile, side-by-side on desktop using `flex-col sm:flex-row`
+
+### Component Patterns
+
+- **DataTable**: Use the reusable `components/ui/data-table.tsx` for all list pages
+  - Supports filtering, sorting, and custom toolbar actions
+  - Mobile-responsive with horizontal scroll
+  - Column definitions in separate files (e.g., `components/members/columns.tsx`)
+- **Forms**: Use Dialog components for add/edit forms
+- **Navigation**: Active states handled via `usePathname()` and `data-active` attribute
+
+### Table Styling
+
+- Header cells: `h-12 px-4`
+- Body cells: `p-4`
+- Use `whitespace-nowrap` for compact tables
+
+### Example Page Structure
+
+```tsx
+export default function ExamplePage() {
+  return (
+    <DataTable
+      columns={columns}
+      data={data}
+      filterColumn="name"
+      filterPlaceholder="Filter..."
+      toolbarActions={<Button>Add Item</Button>}
+    />
+  );
+}
+```
 
 ## Database Schema
 
@@ -62,9 +107,12 @@ members (
   phone text,
   user_id uuid references users(id),
   is_guest boolean default false,
+  archived boolean default false,
   created_at timestamp default now()
 )
 ```
+
+**Note**: Members cannot be deleted (data integrity). Use `archived` flag instead.
 
 ### Fuel Fills Table
 
@@ -133,8 +181,8 @@ Where:
 
 ### Main Application
 
-- [x] `/dashboard` - Overview with car setup dialog and navigation
-- [x] `/members` - List members, add new members
+- [x] `/dashboard` - Overview with navigation cards
+- [x] `/members` - DataTable with edit/archive functionality
 - [ ] `/fuel` - List fuel fills, add new fill
 - [ ] `/trips` - List trips, add new trip
 - [ ] `/balances` - Show member balances, settlement actions
@@ -147,40 +195,107 @@ Where:
 - [x] Create Supabase project
 - [x] Install `@supabase/supabase-js` and `@supabase/ssr`
 - [x] Configure environment variables
-- [x] Create database tables with RLS policies
+- [x] Create database tables with RLS policies (migrations 001-004)
 - [x] Set up phone auth provider
-- [x] Create Supabase client utilities
-- [x] Implement auth proxy middleware
+- [x] Create Supabase client utilities (client.ts, server.ts, middleware.ts)
+- [x] Implement auth proxy middleware (proxy.ts for Next.js 16)
 
 ### Phase 2: Authentication ✅
 
 - [x] Build login/OTP flow UI
-- [x] Create auth context/hooks
-- [x] Build phone input page
-- [x] Build OTP verification page
-- [x] Add AuthProvider and Toaster to layout
-- [x] Create dashboard placeholder
+- [x] Create auth context/hooks (lib/auth/context.tsx)
+- [x] Build phone input page with OTP sending
+- [x] Build OTP verification page with InputOTP component
+- [x] Add AuthProvider and Toaster to root layout
 - [x] Build onboarding page for name collection
+- [x] Auto-link members with matching phone numbers on login
 
 ### Phase 3: Car & Members ✅
 
-- [x] Car setup form and creation (as dialog on dashboard)
-- [x] Members list and add functionality
-- [x] Fixed RLS policies to prevent infinite recursion
-- [x] Refactored car form into reusable component
+- [x] Car setup form component (components/car/car-setup-form.tsx)
+- [x] Car creation dialog on dashboard
+- [x] Auto-add owner as member when creating car
+- [x] Fixed RLS infinite recursion (migration 003)
+- [x] Created reusable DataTable component
+- [x] Members page with DataTable
+- [x] Add/edit member functionality
+- [x] Archive/unarchive members (migration 004)
+- [x] "Show archived" toggle (only visible when archived members exist)
+- [x] Member type badges (Owner/Guest/Member)
 
-### Phase 4: Fuel & Trips
+### Phase 4: Navigation & Layout ✅
 
-- [ ] Fuel fills list and form
-- [ ] Trips list and form with passenger selection
+- [x] Create AppNavbar with responsive design
+- [x] Create AppBreadcrumb for contextual navigation
+- [x] Implement (app) and (auth) route groups
+- [x] Add active state tracking to navigation
+- [x] Create landing page with feature cards
+- [x] Mobile-responsive navbar (hide links on small screens)
+
+### Phase 5: Fuel & Trips 🚧
+
+- [ ] Fuel fills DataTable and columns
+- [ ] Add fuel fill form (payer selection, amount)
+- [ ] Trips DataTable and columns
+- [ ] Add trip form (distance, passenger multi-select, driver)
 - [ ] Calculate and display trip costs
+- [ ] Filter archived members from selection dropdowns
 
-### Phase 5: Balances & Settlements
+### Phase 6: Balances & Settlements 🚧
 
-- [ ] Calculate member balances
-- [ ] Display balance summary
+- [ ] Calculate member balances (frontend)
+- [ ] Display balance summary table
 - [ ] Settlement recording form
-- [ ] Settlement history
+- [ ] Settlement history DataTable
+- [ ] Update balances after new settlements
+
+## Key Files & Structure
+
+```
+app/
+├── (auth)/              # Auth route group with centered layout
+│   ├── layout.tsx       # Centered auth layout
+│   ├── login/
+│   ├── verify/
+│   └── onboarding/
+├── (app)/               # App route group with navbar + breadcrumbs
+│   ├── layout.tsx       # Navbar + breadcrumbs + container
+│   ├── dashboard/
+│   ├── members/
+│   ├── fuel/
+│   ├── trips/
+│   └── balances/
+├── page.tsx             # Landing page (public)
+└── layout.tsx           # Root layout with AuthProvider + Toaster
+
+components/
+├── ui/                  # shadcn/ui components
+│   ├── data-table.tsx   # Reusable table component
+│   ├── table.tsx        # Table primitives (updated spacing)
+│   └── navigation-menu.tsx  # Updated with active prop
+├── app/                 # App-specific components
+│   ├── app-navbar.tsx   # Main navigation
+│   └── app-breadcrumb.tsx
+├── car/
+│   └── car-setup-form.tsx
+└── members/
+    └── columns.tsx      # Member table column definitions
+
+lib/
+├── supabase/
+│   ├── client.ts        # Browser client
+│   ├── server.ts        # Server client
+│   └── middleware.ts    # Auth middleware utilities
+└── auth/
+    └── context.tsx      # Auth context + useAuth hook
+
+supabase/
+└── migrations/
+    ├── 001_initial_schema.sql
+    ├── 002_rls_policies.sql
+    ├── 003_fix_rls_policies.sql
+    └── 004_add_archived_to_members.sql
+```
 
 ## MVP Constraints
 
@@ -188,5 +303,7 @@ Where:
 - Simple equal splits (no weighted splits)
 - Frontend-calculated balances (no complex DB queries)
 - Minimal styling (use shadcn/ui components)
-- No expense editing/deletion initially
+- No editing/deletion of expenses (archive instead)
 - No multi-currency support
+- Members cannot be deleted (use archive)
+- Owner-only access (no sharing between users yet)
