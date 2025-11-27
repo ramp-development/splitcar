@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,12 +6,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Car, Users, Receipt, Calculator } from "lucide-react";
 
 export default function LandingPage() {
-  const router = useRouter();
-
   return (
     <div className="min-h-screen bg-linear-to-b from-background to-muted/20">
       <div className="mx-auto max-w-6xl px-4 py-16">
@@ -25,15 +21,11 @@ export default function LandingPage() {
             and split costs automatically.
           </p>
           <div className="mt-8 flex justify-center gap-4">
-            <Button size="lg" onClick={() => router.push("/login")}>
-              Get Started
+            <Button size="lg" asChild>
+              <Link href="/login">Get Started</Link>
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => router.push("/login")}
-            >
-              Sign In
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/login">Sign In</Link>
             </Button>
           </div>
         </div>
@@ -129,8 +121,8 @@ export default function LandingPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="lg" onClick={() => router.push("/login")}>
-                Start Tracking Now
+              <Button size="lg" asChild>
+                <Link href="/login">Start Tracking Now</Link>
               </Button>
             </CardContent>
           </Card>

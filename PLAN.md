@@ -14,7 +14,8 @@
 - ✅ Members page with archive functionality complete
 - ✅ Fuel fills feature complete
 - ✅ Trips feature complete
-- 🚧 Balances & Settlements pending
+- ✅ Balances & Settlements complete
+- ✅ **MVP COMPLETE!**
 
 ## Overview
 
@@ -188,8 +189,8 @@ Where:
 - [x] `/members` - DataTable with edit/archive functionality
 - [x] `/fuel` - List fuel fills, add new fill
 - [x] `/trips` - List trips, add new trip with name and passengers
-- [ ] `/balances` - Show member balances, settlement actions
-- [ ] `/settlements` - List settlements, add new settlement
+- [x] `/balances` - Show member balances, settlement actions
+- [x] `/settlements` - List settlements, add new settlement
 
 ## Implementation Phases
 
@@ -250,13 +251,18 @@ Where:
 - [x] Prevent future date selection
 - [x] Support retrospective entry with dropdown year/month selection
 
-### Phase 6: Balances & Settlements 🚧
+### Phase 6: Balances & Settlements ✅
 
-- [ ] Calculate member balances (frontend)
-- [ ] Display balance summary table
-- [ ] Settlement recording form
-- [ ] Settlement history DataTable
-- [ ] Update balances after new settlements
+- [x] Calculate member balances (frontend)
+- [x] Display balance summary table
+- [x] Settlement recording form
+- [x] Settlement history DataTable
+- [x] Update balances after new settlements
+- [x] Created balances page with complete balance breakdown
+- [x] Created settlements page with form and history
+- [x] Auto-select current user as settlement sender
+- [x] Validate From ≠ To in settlement form
+- [x] Color-coded balances (green = owed, red = owes)
 
 ## Key Files & Structure
 
@@ -273,7 +279,8 @@ app/
 │   ├── members/
 │   ├── fuel/
 │   ├── trips/
-│   └── balances/
+│   ├── balances/
+│   └── settlements/
 ├── page.tsx             # Landing page (public)
 └── layout.tsx           # Root layout with AuthProvider + Toaster
 
@@ -289,10 +296,14 @@ components/
 │   └── car-setup-form.tsx
 ├── members/
 │   └── columns.tsx      # Member table column definitions
-├── fuel/
+├── fuel-fills/
 │   └── columns.tsx      # Fuel fill table column definitions
-└── trips/
-    └── columns.tsx      # Trip table column definitions
+├── trips/
+│   └── columns.tsx      # Trip table column definitions
+├── balances/
+│   └── columns.tsx      # Balance table column definitions
+└── settlements/
+    └── columns.tsx      # Settlement table column definitions
 
 lib/
 ├── supabase/
