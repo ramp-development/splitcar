@@ -26,7 +26,9 @@ export default function MembersPage() {
   const [carId, setCarId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newMember, setNewMember] = useState({
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [memberForm, setMemberForm] = useState({
     name: "",
     phone: "",
     isGuest: false,
@@ -84,65 +86,112 @@ export default function MembersPage() {
     loadMembers();
   }, [user, router]);
 
-  async function handleAddMember(e: React.FormEvent) {
+  async function handleSubmitMember(e: React.FormEvent) {
     e.preventDefault();
     if (!carId) return;
 
     const supabase = createClient();
 
     try {
-      const { error } = await supabase.from("members").insert({
-        car_id: carId,
-        name: newMember.name,
-        phone: newMember.phone || null,
-        is_guest: newMember.isGuest,
-      });
+      if (editingMember) {
+        // Update existing member
+        const { error } = await supabase
+          .from("members")
+          .update({
+            name: memberForm.name,
+            phone: memberForm.phone || null,
+            is_guest: memberForm.isGuest,
+          })
+          .eq("id", editingMember.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast.success("Member added!");
-      setDialogOpen(false);
-      setNewMember({ name: "", phone: "", isGuest: false });
-
-      // Reload members
-      if (!user) return;
-
-      const { data: membersData } = await supabase
-        .from("members")
-        .select("*")
-        .eq("car_id", carId);
-
-      const sortedMembers = (membersData || []).sort((a, b) => {
-        if (a.user_id === user.id) return -1;
-        if (b.user_id === user.id) return 1;
-        return (
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        toast.success("Member updated!");
+        setMembers(
+          members.map((m) =>
+            m.id === editingMember.id
+              ? {
+                  ...m,
+                  name: memberForm.name,
+                  phone: memberForm.phone || null,
+                  is_guest: memberForm.isGuest,
+                }
+              : m
+          )
         );
-      });
+      } else {
+        // Add new member
+        const { error } = await supabase.from("members").insert({
+          car_id: carId,
+          name: memberForm.name,
+          phone: memberForm.phone || null,
+          is_guest: memberForm.isGuest,
+        });
 
-      setMembers(sortedMembers);
+        if (error) throw error;
+
+        toast.success("Member added!");
+
+        // Reload members
+        if (!user) return;
+
+        const { data: membersData } = await supabase
+          .from("members")
+          .select("*")
+          .eq("car_id", carId);
+
+        const sortedMembers = (membersData || []).sort((a, b) => {
+          if (a.user_id === user.id) return -1;
+          if (b.user_id === user.id) return 1;
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        });
+
+        setMembers(sortedMembers);
+      }
+
+      setDialogOpen(false);
+      setEditingMember(null);
+      setMemberForm({ name: "", phone: "", isGuest: false });
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to add member"
+        error instanceof Error
+          ? error.message
+          : editingMember
+            ? "Failed to update member"
+            : "Failed to add member"
       );
     }
   }
 
-  async function handleRemoveMember(memberId: string) {
+  function handleEditMember(member: Member) {
+    setEditingMember(member);
+    setMemberForm({
+      name: member.name,
+      phone: member.phone || "",
+      isGuest: member.is_guest,
+    });
+    setDialogOpen(true);
+  }
+
+  async function handleArchiveMember(memberId: string, archived: boolean) {
     const supabase = createClient();
 
     try {
       const { error } = await supabase
         .from("members")
-        .delete()
+        .update({ archived })
         .eq("id", memberId);
 
       if (error) throw error;
 
-      toast.success("Member removed");
-      setMembers(members.filter((m) => m.id !== memberId));
+      toast.success(archived ? "Member archived" : "Member unarchived");
+      setMembers(
+        members.map((m) => (m.id === memberId ? { ...m, archived } : m))
+      );
     } catch (error) {
-      toast.error("Failed to remove member");
+      toast.error("Failed to update member");
       console.error(error);
     }
   }
@@ -172,9 +221,16 @@ export default function MembersPage() {
 
   const columns = createMemberColumns(
     user?.id,
-    handleRemoveMember,
-    handleToggleGuest
+    handleEditMember,
+    handleToggleGuest,
+    handleArchiveMember
   );
+
+  const filteredMembers = showArchived
+    ? members
+    : members.filter((m) => !m.archived);
+
+  const hasArchivedMembers = members.some((m) => m.archived);
 
   if (loading) {
     return (
@@ -185,72 +241,98 @@ export default function MembersPage() {
   }
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="mx-auto max-w-6xl">
-        <DataTable
-          columns={columns}
-          data={members}
-          filterColumn="name"
-          filterPlaceholder="Filter by name..."
-          toolbarActions={
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Member
+    <DataTable
+      columns={columns}
+      data={filteredMembers}
+      filterColumn="name"
+      filterPlaceholder="Filter by name..."
+      toolbarActions={
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
+          {hasArchivedMembers && (
+            <div className="flex items-center gap-2 text-sm">
+              <Switch
+                id="show-archived"
+                checked={showArchived}
+                onCheckedChange={setShowArchived}
+              />
+              <Label htmlFor="show-archived" className="cursor-pointer text-sm">
+                Archived
+              </Label>
+            </div>
+          )}
+          <Dialog
+            open={dialogOpen}
+            onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (!open) {
+                setEditingMember(null);
+                setMemberForm({ name: "", phone: "", isGuest: false });
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Member
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingMember ? "Edit Member" : "Add New Member"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingMember
+                    ? "Update member information"
+                    : "Add someone who shares this car"}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmitMember} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="member-name">Name</Label>
+                  <Input
+                    id="member-name"
+                    value={memberForm.name}
+                    onChange={(e) =>
+                      setMemberForm({ ...memberForm, name: e.target.value })
+                    }
+                    required
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="member-phone">Phone (optional)</Label>
+                  <Input
+                    id="member-phone"
+                    type="tel"
+                    value={memberForm.phone}
+                    onChange={(e) =>
+                      setMemberForm({
+                        ...memberForm,
+                        phone: e.target.value,
+                      })
+                    }
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="is-guest">Guest member</Label>
+                  <Switch
+                    id="is-guest"
+                    checked={memberForm.isGuest}
+                    onCheckedChange={(checked) =>
+                      setMemberForm({ ...memberForm, isGuest: checked })
+                    }
+                  />
+                </div>
+                <Button type="submit" className="w-full">
+                  {editingMember ? "Update Member" : "Add Member"}
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Member</DialogTitle>
-                  <DialogDescription>
-                    Add someone who shares this car
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleAddMember} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="member-name">Name</Label>
-                    <Input
-                      id="member-name"
-                      value={newMember.name}
-                      onChange={(e) =>
-                        setNewMember({ ...newMember, name: e.target.value })
-                      }
-                      required
-                      placeholder="John Doe"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="member-phone">Phone (optional)</Label>
-                    <Input
-                      id="member-phone"
-                      type="tel"
-                      value={newMember.phone}
-                      onChange={(e) =>
-                        setNewMember({ ...newMember, phone: e.target.value })
-                      }
-                      placeholder="+1 (555) 123-4567"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="is-guest">Guest member</Label>
-                    <Switch
-                      id="is-guest"
-                      checked={newMember.isGuest}
-                      onCheckedChange={(checked) =>
-                        setNewMember({ ...newMember, isGuest: checked })
-                      }
-                    />
-                  </div>
-                  <Button type="submit" className="w-full">
-                    Add Member
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          }
-        />
-      </div>
-    </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      }
+    />
   );
 }

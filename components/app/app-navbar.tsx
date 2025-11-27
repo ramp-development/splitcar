@@ -24,13 +24,13 @@ export function AppNavbar() {
 
   return (
     <header className="border-b">
-      <div className="flex h-16 items-center px-4 md:px-6">
+      <div className="flex h-16 items-center px-4 md:px-6 mx-auto max-w-6xl">
         <div className="flex items-center gap-6 md:gap-10">
           <Link href="/dashboard" className="flex items-center space-x-2">
             <span className="text-xl font-bold">SplitDrive</span>
           </Link>
 
-          <NavigationMenu>
+          <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
                 <Link href="/dashboard" legacyBehavior passHref>
@@ -74,7 +74,7 @@ export function AppNavbar() {
         <div className="ml-auto">
           <Button variant="ghost" size="sm" onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
+            <span className="hidden sm:inline">Sign Out</span>
           </Button>
         </div>
       </div>

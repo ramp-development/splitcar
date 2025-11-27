@@ -5,13 +5,6 @@ import { useAuth } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -89,60 +82,57 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="p-6 md:p-8">
-        <div className="mx-auto max-w-6xl space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Welcome back, {userName}!</CardTitle>
-              <CardDescription>Your SplitDrive overview</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-3">
-                <Button
-                  variant="outline"
-                  className="h-24 flex-col gap-2"
-                  onClick={() => router.push("/members")}
-                >
-                  <span className="text-2xl">👥</span>
-                  <span>Members</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-24 flex-col gap-2"
-                  onClick={() => router.push("/fuel")}
-                >
-                  <span className="text-2xl">⛽</span>
-                  <span>Fuel Fills</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-24 flex-col gap-2"
-                  onClick={() => router.push("/trips")}
-                >
-                  <span className="text-2xl">🚗</span>
-                  <span>Trips</span>
-                </Button>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Button
-                  variant="outline"
-                  className="h-24 flex-col gap-2"
-                  onClick={() => router.push("/balances")}
-                >
-                  <span className="text-2xl">💰</span>
-                  <span>Balances</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-24 flex-col gap-2"
-                  onClick={() => router.push("/settlements")}
-                >
-                  <span className="text-2xl">🤝</span>
-                  <span>Settlements</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Welcome back, {userName}!</h1>
+          <p className="text-muted-foreground">Your SplitDrive overview</p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Button
+              variant="outline"
+              className="h-24 flex-col gap-2"
+              onClick={() => router.push("/members")}
+            >
+              <span className="text-2xl">👥</span>
+              <span>Members</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 flex-col gap-2"
+              onClick={() => router.push("/fuel")}
+            >
+              <span className="text-2xl">⛽</span>
+              <span>Fuel Fills</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 flex-col gap-2"
+              onClick={() => router.push("/trips")}
+            >
+              <span className="text-2xl">🚗</span>
+              <span>Trips</span>
+            </Button>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Button
+              variant="outline"
+              className="h-24 flex-col gap-2"
+              onClick={() => router.push("/balances")}
+            >
+              <span className="text-2xl">💰</span>
+              <span>Balances</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 flex-col gap-2"
+              onClick={() => router.push("/settlements")}
+            >
+              <span className="text-2xl">🤝</span>
+              <span>Settlements</span>
+            </Button>
+          </div>
         </div>
       </div>
     </>

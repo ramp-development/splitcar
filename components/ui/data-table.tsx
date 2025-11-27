@@ -57,8 +57,8 @@ export function DataTable<TData, TValue>({
   return (
     <div className="w-full space-y-4">
       {(filterColumn || toolbarActions) && (
-        <div className="flex items-center justify-between gap-2">
-          {filterColumn ? (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          {filterColumn && (
             <input
               placeholder={filterPlaceholder || "Filter..."}
               value={
@@ -68,15 +68,17 @@ export function DataTable<TData, TValue>({
               onChange={(event) =>
                 table.getColumn(filterColumn)?.setFilterValue(event.target.value)
               }
-              className="h-10 max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:max-w-sm"
             />
-          ) : (
-            <div />
           )}
-          {toolbarActions}
+          {toolbarActions && (
+            <div className="flex w-full justify-end sm:w-auto">
+              {toolbarActions}
+            </div>
+          )}
         </div>
       )}
-      <div className="overflow-hidden rounded-md border">
+      <div className="overflow-x-auto overflow-y-hidden rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

@@ -19,12 +19,14 @@ export type Member = {
   phone: string | null;
   is_guest: boolean;
   user_id: string | null;
+  archived: boolean;
 };
 
 export function createMemberColumns(
   currentUserId: string | undefined,
-  onRemove: (memberId: string) => void,
-  onToggleGuest: (memberId: string, isGuest: boolean) => void
+  onEdit: (member: Member) => void,
+  onToggleGuest: (memberId: string, isGuest: boolean) => void,
+  onArchive: (memberId: string, archived: boolean) => void
 ): ColumnDef<Member>[] {
   return [
     {
@@ -32,10 +34,12 @@ export function createMemberColumns(
       header: "Name",
       cell: ({ row }) => {
         const isCurrentUser = row.original.user_id === currentUserId;
+        const isArchived = row.original.archived;
         return (
           <div className="flex items-center gap-2">
             <span className="font-medium">{row.getValue("name")}</span>
             {isCurrentUser && <Badge variant="secondary">You</Badge>}
+            {isArchived && <Badge variant="outline">Archived</Badge>}
           </div>
         );
       },
@@ -86,6 +90,9 @@ export function createMemberColumns(
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onEdit(member)}>
+                Edit
+              </DropdownMenuItem>
               {!isCurrentUser && (
                 <>
                   <DropdownMenuItem
@@ -95,17 +102,11 @@ export function createMemberColumns(
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => onRemove(member.id)}
-                    className="text-destructive"
+                    onClick={() => onArchive(member.id, !member.archived)}
                   >
-                    Remove
+                    {member.archived ? "Unarchive" : "Archive"}
                   </DropdownMenuItem>
                 </>
-              )}
-              {isCurrentUser && (
-                <DropdownMenuItem disabled>
-                  You cannot modify yourself
-                </DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
