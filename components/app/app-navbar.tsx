@@ -23,6 +23,29 @@ export function AppNavbar() {
     router.push("/login");
   };
 
+  const navigationItems = [
+    {
+      label: "Dashboard",
+      href: "/dashboard",
+    },
+    {
+      label: "Members",
+      href: "/members",
+    },
+    {
+      label: "Fuel",
+      href: "/fuel",
+    },
+    {
+      label: "Trips",
+      href: "/trips",
+    },
+    {
+      label: "Balances",
+      href: "/balances",
+    },
+  ];
+
   return (
     <header className="border-b">
       <div className="flex h-16 items-center px-4 md:px-6 mx-auto max-w-6xl">
@@ -33,51 +56,17 @@ export function AppNavbar() {
 
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  asChild
-                  active={pathname === "/dashboard"}
-                  className={navigationMenuTriggerStyle()}
-                >
-                  <Link href="/dashboard">Dashboard</Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  asChild
-                  active={pathname === "/members"}
-                  className={navigationMenuTriggerStyle()}
-                >
-                  <Link href="/members">Members</Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  asChild
-                  active={pathname === "/fuel"}
-                  className={navigationMenuTriggerStyle()}
-                >
-                  <Link href="/fuel">Fuel</Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  asChild
-                  active={pathname === "/trips"}
-                  className={navigationMenuTriggerStyle()}
-                >
-                  <Link href="/trips">Trips</Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  asChild
-                  active={pathname === "/balances"}
-                  className={navigationMenuTriggerStyle()}
-                >
-                  <Link href="/balances">Balances</Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
+              {navigationItems.map((item) => (
+                <NavigationMenuItem key={item.href}>
+                  <NavigationMenuLink
+                    asChild
+                    active={pathname === item.href}
+                    className={navigationMenuTriggerStyle()}
+                  >
+                    <Link href={item.href}>{item.label}</Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              ))}
             </NavigationMenuList>
           </NavigationMenu>
         </div>
