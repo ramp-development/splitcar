@@ -24,8 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDownIcon } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { createFuelFillColumns, FuelFill } from "@/components/fuel-fills/columns";
 
@@ -52,7 +58,9 @@ export default function FuelFillsPage() {
   const [fuelFillForm, setFuelFillForm] = useState({
     payerMemberId: "",
     amount: "",
+    date: new Date(),
   });
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
 
@@ -99,7 +107,7 @@ export default function FuelFillsPage() {
           `
           )
           .eq("car_id", carData.id)
-          .order("created_at", { ascending: false });
+          .order("date", { ascending: false });
 
         if (fuelFillsError) throw fuelFillsError;
 
@@ -109,6 +117,7 @@ export default function FuelFillsPage() {
           car_id: fill.car_id,
           payer_member_id: fill.payer_member_id,
           amount: fill.amount,
+          date: fill.date,
           created_at: fill.created_at,
           payer_name: fill.members?.name || "Unknown",
         }));
@@ -139,6 +148,7 @@ export default function FuelFillsPage() {
           .update({
             payer_member_id: fuelFillForm.payerMemberId,
             amount: parseFloat(fuelFillForm.amount),
+            date: fuelFillForm.date.toISOString().split("T")[0],
           })
           .eq("id", editingFuelFill.id);
 
@@ -158,13 +168,14 @@ export default function FuelFillsPage() {
           `
           )
           .eq("car_id", car.id)
-          .order("created_at", { ascending: false });
+          .order("date", { ascending: false });
 
         const transformedFuelFills = (fuelFillsData || []).map((fill) => ({
           id: fill.id,
           car_id: fill.car_id,
           payer_member_id: fill.payer_member_id,
           amount: fill.amount,
+          date: fill.date,
           created_at: fill.created_at,
           payer_name: fill.members?.name || "Unknown",
         }));
@@ -176,6 +187,7 @@ export default function FuelFillsPage() {
           car_id: car.id,
           payer_member_id: fuelFillForm.payerMemberId,
           amount: parseFloat(fuelFillForm.amount),
+          date: fuelFillForm.date.toISOString().split("T")[0],
         });
 
         if (error) throw error;
@@ -194,13 +206,14 @@ export default function FuelFillsPage() {
           `
           )
           .eq("car_id", car.id)
-          .order("created_at", { ascending: false });
+          .order("date", { ascending: false });
 
         const transformedFuelFills = (fuelFillsData || []).map((fill) => ({
           id: fill.id,
           car_id: fill.car_id,
           payer_member_id: fill.payer_member_id,
           amount: fill.amount,
+          date: fill.date,
           created_at: fill.created_at,
           payer_name: fill.members?.name || "Unknown",
         }));
@@ -210,7 +223,7 @@ export default function FuelFillsPage() {
 
       setDialogOpen(false);
       setEditingFuelFill(null);
-      setFuelFillForm({ payerMemberId: "", amount: "" });
+      setFuelFillForm({ payerMemberId: "", amount: "", date: new Date() });
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -227,6 +240,7 @@ export default function FuelFillsPage() {
     setFuelFillForm({
       payerMemberId: fuelFill.payer_member_id,
       amount: fuelFill.amount.toString(),
+      date: new Date(fuelFill.date),
     });
     setDialogOpen(true);
   }
@@ -294,7 +308,7 @@ export default function FuelFillsPage() {
             setDialogOpen(open);
             if (!open) {
               setEditingFuelFill(null);
-              setFuelFillForm({ payerMemberId: "", amount: "" });
+              setFuelFillForm({ payerMemberId: "", amount: "", date: new Date() });
             }
           }}
         >
@@ -306,6 +320,7 @@ export default function FuelFillsPage() {
                   setFuelFillForm({
                     payerMemberId: currentUserMemberId,
                     amount: "",
+                    date: new Date(),
                   });
                 }
               }}
@@ -387,6 +402,37 @@ export default function FuelFillsPage() {
                   required
                   placeholder="50.00"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="date">Date</Label>
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      id="date"
+                      className="w-full justify-between font-normal"
+                    >
+                      {fuelFillForm.date.toLocaleDateString()}
+                      <ChevronDownIcon className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={fuelFillForm.date}
+                      captionLayout="dropdown"
+                      onSelect={(date) => {
+                        if (date) {
+                          setFuelFillForm({ ...fuelFillForm, date });
+                          setDatePickerOpen(false);
+                        }
+                      }}
+                      disabled={(date) => date > new Date()}
+                      fromYear={2020}
+                      toYear={new Date().getFullYear()}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <Button type="submit" className="w-full">
                 {editingFuelFill ? "Update Fuel Fill" : "Add Fuel Fill"}

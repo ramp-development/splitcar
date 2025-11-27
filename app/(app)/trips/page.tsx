@@ -16,16 +16,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDownIcon } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { createTripColumns, Trip } from "@/components/trips/columns";
 
@@ -56,7 +55,9 @@ export default function TripsPage() {
     name: "",
     distanceKm: "",
     passengerIds: [] as string[],
+    date: new Date(),
   });
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
 
@@ -98,7 +99,7 @@ export default function TripsPage() {
           .from("trips")
           .select("*")
           .eq("car_id", carData.id)
-          .order("created_at", { ascending: false });
+          .order("date", { ascending: false });
 
         if (tripsError) throw tripsError;
 
@@ -126,6 +127,7 @@ export default function TripsPage() {
               name: trip.name,
               distance_km: trip.distance_km,
               passenger_member_ids: trip.passenger_member_ids || [],
+              date: trip.date,
               created_at: trip.created_at,
               passenger_names: passengerNames,
               cost_per_passenger: costPerPassenger,
@@ -166,6 +168,7 @@ export default function TripsPage() {
             name: tripForm.name || null,
             distance_km: parseFloat(tripForm.distanceKm),
             passenger_member_ids: tripForm.passengerIds,
+            date: tripForm.date.toISOString().split("T")[0],
           })
           .eq("id", editingTrip.id);
 
@@ -179,6 +182,7 @@ export default function TripsPage() {
           name: tripForm.name || null,
           distance_km: parseFloat(tripForm.distanceKm),
           passenger_member_ids: tripForm.passengerIds,
+          date: tripForm.date.toISOString().split("T")[0],
         });
 
         if (error) throw error;
@@ -191,7 +195,7 @@ export default function TripsPage() {
         .from("trips")
         .select("*")
         .eq("car_id", car.id)
-        .order("created_at", { ascending: false });
+        .order("date", { ascending: false });
 
       const transformedTrips = await Promise.all(
         (tripsData || []).map(async (trip) => {
@@ -214,6 +218,7 @@ export default function TripsPage() {
             name: trip.name,
             distance_km: trip.distance_km,
             passenger_member_ids: trip.passenger_member_ids || [],
+            date: trip.date,
             created_at: trip.created_at,
             passenger_names: passengerNames,
             cost_per_passenger: costPerPassenger,
@@ -225,7 +230,12 @@ export default function TripsPage() {
       setTrips(transformedTrips);
       setDialogOpen(false);
       setEditingTrip(null);
-      setTripForm({ name: "", distanceKm: "", passengerIds: [] });
+      setTripForm({
+        name: "",
+        distanceKm: "",
+        passengerIds: [],
+        date: new Date(),
+      });
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -243,6 +253,7 @@ export default function TripsPage() {
       name: trip.name || "",
       distanceKm: trip.distance_km.toString(),
       passengerIds: trip.passenger_member_ids,
+      date: new Date(trip.date),
     });
     setDialogOpen(true);
   }
@@ -326,6 +337,7 @@ export default function TripsPage() {
                 name: "",
                 distanceKm: "",
                 passengerIds: [],
+                date: new Date(),
               });
             }
           }}
@@ -339,6 +351,7 @@ export default function TripsPage() {
                     name: "",
                     distanceKm: "",
                     passengerIds: [currentUserMemberId],
+                    date: new Date(),
                   });
                 }
               }}
@@ -401,7 +414,8 @@ export default function TripsPage() {
                 <div className="space-y-2 rounded-md border p-3">
                   {sortedPassengers.map((member, index) => {
                     // Check if we need to add a separator before guests
-                    const prevMember = index > 0 ? sortedPassengers[index - 1] : null;
+                    const prevMember =
+                      index > 0 ? sortedPassengers[index - 1] : null;
                     const showSeparator =
                       prevMember && !prevMember.is_guest && member.is_guest;
 
@@ -438,6 +452,38 @@ export default function TripsPage() {
                   {tripForm.passengerIds.length} passenger
                   {tripForm.passengerIds.length !== 1 ? "s" : ""} selected
                 </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="trip-date">Date</Label>
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      id="trip-date"
+                      className="w-full justify-between font-normal"
+                    >
+                      {tripForm.date.toLocaleDateString()}
+                      <ChevronDownIcon className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={tripForm.date}
+                      captionLayout="dropdown"
+                      onSelect={(date) => {
+                        if (date) {
+                          setTripForm({ ...tripForm, date });
+                          setDatePickerOpen(false);
+                        }
+                      }}
+                      disabled={(date) => date > new Date()}
+                      fromYear={2020}
+                      toYear={new Date().getFullYear()}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <Button type="submit" className="w-full">

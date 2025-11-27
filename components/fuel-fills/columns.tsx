@@ -16,6 +16,7 @@ export type FuelFill = {
   car_id: string;
   payer_member_id: string;
   amount: number;
+  date: string;
   created_at: string;
   payer_name: string; // Joined from members table
 };
@@ -27,10 +28,10 @@ export function createFuelFillColumns(
 ): ColumnDef<FuelFill>[] {
   return [
     {
-      accessorKey: "created_at",
+      accessorKey: "date",
       header: "Date",
       cell: ({ row }) => {
-        const date = new Date(row.getValue("created_at"));
+        const date = new Date(row.getValue("date"));
         return (
           <span className="font-medium">
             {date.toLocaleDateString(undefined, {

@@ -18,6 +18,7 @@ export type Trip = {
   name: string | null;
   distance_km: number;
   passenger_member_ids: string[];
+  date: string;
   created_at: string;
   passenger_names: string[];
   cost_per_passenger: number;
@@ -32,10 +33,10 @@ export function createTripColumns(
 ): ColumnDef<Trip>[] {
   return [
     {
-      accessorKey: "created_at",
+      accessorKey: "date",
       header: "Date",
       cell: ({ row }) => {
-        const date = new Date(row.getValue("created_at"));
+        const date = new Date(row.getValue("date"));
         return (
           <span className="font-medium">
             {date.toLocaleDateString(undefined, {
