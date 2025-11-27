@@ -10,12 +10,6 @@ import { Plus } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { createBalanceColumns, Balance } from "@/components/balances/columns";
 
-type Member = {
-  id: string;
-  name: string;
-  archived: boolean;
-};
-
 type Car = {
   id: string;
   currency: string;
@@ -41,7 +35,6 @@ type Settlement = {
 
 export default function BalancesPage() {
   const [balances, setBalances] = useState<Balance[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
   const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -77,7 +70,6 @@ export default function BalancesPage() {
           .order("name");
 
         if (membersError) throw membersError;
-        setMembers(membersData || []);
 
         // Get fuel fills
         const { data: fuelFillsData, error: fuelFillsError } = await supabase
