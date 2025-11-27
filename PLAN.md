@@ -123,6 +123,7 @@ fuel_fills (
   car_id uuid references cars(id) on delete cascade,
   payer_member_id uuid references members(id),
   amount numeric not null,
+  date date not null default current_date,
   created_at timestamp default now()
 )
 ```
@@ -136,6 +137,7 @@ trips (
   name text,
   distance_km numeric not null,
   passenger_member_ids uuid[] not null,
+  date date not null default current_date,
   created_at timestamp default now()
 )
 ```
@@ -196,7 +198,7 @@ Where:
 - [x] Create Supabase project
 - [x] Install `@supabase/supabase-js` and `@supabase/ssr`
 - [x] Configure environment variables
-- [x] Create database tables with RLS policies (migrations 001-004)
+- [x] Create database tables with RLS policies (migrations 001-007)
 - [x] Set up phone auth provider
 - [x] Create Supabase client utilities (client.ts, server.ts, middleware.ts)
 - [x] Implement auth proxy middleware (proxy.ts for Next.js 16)
@@ -233,7 +235,7 @@ Where:
 - [x] Create landing page with feature cards
 - [x] Mobile-responsive navbar (hide links on small screens)
 
-### Phase 5: Fuel & Trips 🚧
+### Phase 5: Fuel & Trips ✅
 
 - [x] Fuel fills DataTable and columns
 - [x] Add fuel fill form (payer selection, amount)
@@ -243,6 +245,10 @@ Where:
 - [x] Add trip form (name, distance, passenger multi-select)
 - [x] Auto-select current user as passenger
 - [x] Calculate and display trip costs (total and per passenger)
+- [x] Add date fields to fuel fills and trips (migrations 006-007)
+- [x] Replace date inputs with shadcn Calendar picker
+- [x] Prevent future date selection
+- [x] Support retrospective entry with dropdown year/month selection
 
 ### Phase 6: Balances & Settlements 🚧
 
@@ -301,7 +307,10 @@ supabase/
     ├── 001_initial_schema.sql
     ├── 002_rls_policies.sql
     ├── 003_fix_rls_policies.sql
-    └── 004_add_archived_to_members.sql
+    ├── 004_add_archived_to_members.sql
+    ├── 005_add_name_to_trips.sql
+    ├── 006_add_date_to_fuel_fills.sql
+    └── 007_add_date_to_trips.sql
 ```
 
 ## MVP Constraints
