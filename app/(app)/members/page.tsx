@@ -65,13 +65,17 @@ export default function MembersPage() {
 
         if (error) throw error;
 
-        // Sort members: current user first, then by creation date
+        // Sort members: current user first, then members, then guests
         const sortedMembers = (membersData || []).sort((a, b) => {
           if (a.user_id === user.id) return -1;
           if (b.user_id === user.id) return 1;
-          return (
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
+
+          // Then members before guests
+          if (!a.is_guest && b.is_guest) return -1;
+          if (a.is_guest && !b.is_guest) return 1;
+
+          // Within same group, sort alphabetically
+          return a.name.localeCompare(b.name);
         });
 
         setMembers(sortedMembers);
@@ -143,9 +147,13 @@ export default function MembersPage() {
         const sortedMembers = (membersData || []).sort((a, b) => {
           if (a.user_id === user.id) return -1;
           if (b.user_id === user.id) return 1;
-          return (
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
+
+          // Then members before guests
+          if (!a.is_guest && b.is_guest) return -1;
+          if (a.is_guest && !b.is_guest) return 1;
+
+          // Within same group, sort alphabetically
+          return a.name.localeCompare(b.name);
         });
 
         setMembers(sortedMembers);
