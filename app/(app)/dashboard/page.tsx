@@ -13,6 +13,13 @@ import {
 } from "@/components/ui/dialog";
 import { CarSetupForm } from "@/components/car/car-setup-form";
 import { useRouter } from "next/navigation";
+import {
+  CarIcon,
+  FuelIcon,
+  HandshakeIcon,
+  UsersIcon,
+  WalletIcon,
+} from "lucide-react";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -66,6 +73,34 @@ export default function DashboardPage() {
     );
   }
 
+  const items = [
+    {
+      label: "Members",
+      href: "/members",
+      icon: <UsersIcon className="w-4 h-4" />,
+    },
+    {
+      label: "Fuel",
+      href: "/fuel",
+      icon: <FuelIcon className="w-4 h-4" />,
+    },
+    {
+      label: "Trips",
+      href: "/trips",
+      icon: <CarIcon className="w-4 h-4" />,
+    },
+    {
+      label: "Balances",
+      href: "/balances",
+      icon: <WalletIcon className="w-4 h-4" />,
+    },
+    {
+      label: "Settlements",
+      href: "/settlements",
+      icon: <HandshakeIcon className="w-4 h-4" />,
+    },
+  ];
+
   return (
     <>
       <Dialog open={!hasCar} onOpenChange={() => {}}>
@@ -90,48 +125,17 @@ export default function DashboardPage() {
 
         <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
-            <Button
-              variant="outline"
-              className="h-24 flex-col gap-2"
-              onClick={() => router.push("/members")}
-            >
-              <span className="text-2xl">👥</span>
-              <span>Members</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-24 flex-col gap-2"
-              onClick={() => router.push("/fuel")}
-            >
-              <span className="text-2xl">⛽</span>
-              <span>Fuel Fills</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-24 flex-col gap-2"
-              onClick={() => router.push("/trips")}
-            >
-              <span className="text-2xl">🚗</span>
-              <span>Trips</span>
-            </Button>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Button
-              variant="outline"
-              className="h-24 flex-col gap-2"
-              onClick={() => router.push("/balances")}
-            >
-              <span className="text-2xl">💰</span>
-              <span>Balances</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-24 flex-col gap-2"
-              onClick={() => router.push("/settlements")}
-            >
-              <span className="text-2xl">🤝</span>
-              <span>Settlements</span>
-            </Button>
+            {items.map((item) => (
+              <Button
+                key={item.href}
+                variant="outline"
+                className="h-24 flex-col gap-2"
+                onClick={() => router.push(item.href)}
+              >
+                <span className="text-2xl text-primary">{item.icon}</span>
+                <span className="text-sm font-medium">{item.label}</span>
+              </Button>
+            ))}
           </div>
         </div>
       </div>
