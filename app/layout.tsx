@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SplitDrive - Fair Car Cost Tracking",
+  title: "SplitCar - Fair Car Cost Tracking",
   description:
-    "Track fuel fills, log trips, and split car costs fairly with SplitDrive. Perfect for shared car expenses on group trips.",
+    "Track fuel fills, log trips, and split car costs fairly with SplitCar. Perfect for shared car expenses on group trips.",
 };
 
 export default function RootLayout({

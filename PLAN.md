@@ -1,4 +1,4 @@
-# SplitDrive MVP Plan
+# SplitCar MVP Plan
 
 ## Project Status
 
@@ -12,12 +12,13 @@
 - ✅ Navigation & layout components built
 - ✅ Reusable DataTable component created
 - ✅ Members page with archive functionality complete
-- 🚧 Fuel & Trips features pending
+- ✅ Fuel fills feature complete
+- ✅ Trips feature complete
 - 🚧 Balances & Settlements pending
 
 ## Overview
 
-Build a minimal, functional MVP of SplitDrive: a shared-car cost tracking app used by small groups on trips. The goal is to log fuel fills, track trip distances, calculate fair cost splits, and show who owes what.
+Build a minimal, functional MVP of SplitCar: a shared-car cost tracking app used by small groups on trips. The goal is to log fuel fills, track trip distances, calculate fair cost splits, and show who owes what.
 
 ## Tech Stack
 
@@ -132,9 +133,9 @@ fuel_fills (
 trips (
   id uuid primary key,
   car_id uuid references cars(id) on delete cascade,
+  name text,
   distance_km numeric not null,
   passenger_member_ids uuid[] not null,
-  driver_member_id uuid references members(id),
   created_at timestamp default now()
 )
 ```
@@ -183,8 +184,8 @@ Where:
 
 - [x] `/dashboard` - Overview with navigation cards
 - [x] `/members` - DataTable with edit/archive functionality
-- [ ] `/fuel` - List fuel fills, add new fill
-- [ ] `/trips` - List trips, add new trip
+- [x] `/fuel` - List fuel fills, add new fill
+- [x] `/trips` - List trips, add new trip with name and passengers
 - [ ] `/balances` - Show member balances, settlement actions
 - [ ] `/settlements` - List settlements, add new settlement
 
@@ -234,12 +235,14 @@ Where:
 
 ### Phase 5: Fuel & Trips 🚧
 
-- [ ] Fuel fills DataTable and columns
-- [ ] Add fuel fill form (payer selection, amount)
-- [ ] Trips DataTable and columns
-- [ ] Add trip form (distance, passenger multi-select, driver)
-- [ ] Calculate and display trip costs
-- [ ] Filter archived members from selection dropdowns
+- [x] Fuel fills DataTable and columns
+- [x] Add fuel fill form (payer selection, amount)
+- [x] Auto-select current user as payer
+- [x] Filter archived members from selection dropdowns
+- [x] Trips DataTable and columns
+- [x] Add trip form (name, distance, passenger multi-select)
+- [x] Auto-select current user as passenger
+- [x] Calculate and display trip costs (total and per passenger)
 
 ### Phase 6: Balances & Settlements 🚧
 
@@ -278,8 +281,12 @@ components/
 │   └── app-breadcrumb.tsx
 ├── car/
 │   └── car-setup-form.tsx
-└── members/
-    └── columns.tsx      # Member table column definitions
+├── members/
+│   └── columns.tsx      # Member table column definitions
+├── fuel/
+│   └── columns.tsx      # Fuel fill table column definitions
+└── trips/
+    └── columns.tsx      # Trip table column definitions
 
 lib/
 ├── supabase/

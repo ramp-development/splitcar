@@ -51,7 +51,7 @@ export function AppNavbar() {
       <div className="flex h-16 items-center px-4 md:px-6 mx-auto max-w-6xl">
         <div className="flex items-center gap-6 md:gap-10">
           <Link href="/dashboard" className="flex items-center space-x-2">
-            <span className="text-xl font-bold">SplitDrive</span>
+            <span className="text-xl font-bold">SplitCar</span>
           </Link>
 
           <NavigationMenu className="hidden md:flex">

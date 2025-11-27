@@ -52,7 +52,7 @@ export default function OnboardingPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Welcome to SplitDrive!</CardTitle>
+          <CardTitle>Welcome to SplitCar!</CardTitle>
           <CardDescription>
             Let&apos;s get you set up. What&apos;s your name?
           </CardDescription>

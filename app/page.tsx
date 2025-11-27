@@ -19,7 +19,7 @@ export default function LandingPage() {
       <div className="mx-auto max-w-6xl px-4 py-16">
         {/* Header */}
         <div className="mb-16 text-center">
-          <h1 className="mb-4 text-5xl font-bold tracking-tight">SplitDrive</h1>
+          <h1 className="mb-4 text-5xl font-bold tracking-tight">SplitCar</h1>
           <p className="mx-auto max-w-2xl text-xl text-muted-foreground">
             Fair car cost tracking for group trips. Track fuel fills, log trips,
             and split costs automatically.

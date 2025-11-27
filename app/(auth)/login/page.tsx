@@ -6,7 +6,13 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -31,7 +37,9 @@ export default function LoginPage() {
       toast.success("OTP sent to your phone!");
       router.push("/verify");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to send OTP");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send OTP"
+      );
     } finally {
       setLoading(false);
     }
@@ -41,7 +49,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Welcome to SplitDrive</CardTitle>
+          <CardTitle>Welcome to SplitCar</CardTitle>
           <CardDescription>
             Enter your phone number to get started
           </CardDescription>
