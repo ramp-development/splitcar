@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 
-export default function LoginPage() {
+function LoginForm() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -56,6 +56,42 @@ export default function LoginPage() {
 
   return (
     <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Welcome to SplitCar</CardTitle>
+        <CardDescription>
+          Enter your phone number to get started
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSendOTP} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <PhoneInput
+              id="phone"
+              placeholder="Enter phone number"
+              value={phone}
+              onChange={setPhone}
+              required
+            />
+            {process.env.NODE_ENV === "development" && (
+              <p className="text-sm text-muted-foreground">
+                For testing, use any number like +1 (555) XXX-XXXX
+              </p>
+            )}
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Sending..." : "Send OTP"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Welcome to SplitCar</CardTitle>
           <CardDescription>
@@ -63,27 +99,17 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSendOTP} className="space-y-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <PhoneInput
-                id="phone"
-                placeholder="Enter phone number"
-                value={phone}
-                onChange={setPhone}
-                required
-              />
-              {process.env.NODE_ENV === "development" && (
-                <p className="text-sm text-muted-foreground">
-                  For testing, use any number like +1 (555) XXX-XXXX
-                </p>
-              )}
+              <div className="h-10 bg-muted animate-pulse rounded-md" />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Sending..." : "Send OTP"}
-            </Button>
-          </form>
+            <div className="h-10 bg-muted animate-pulse rounded-md" />
+          </div>
         </CardContent>
       </Card>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
