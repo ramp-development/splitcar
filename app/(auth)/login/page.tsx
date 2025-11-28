@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { PhoneInput } from "@/components/ui/phone-input";
@@ -19,7 +19,16 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  useEffect(() => {
+    // Prefill phone from URL param if present
+    const phoneParam = searchParams.get("phone");
+    if (phoneParam) {
+      setPhone(phoneParam);
+    }
+  }, [searchParams]);
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
