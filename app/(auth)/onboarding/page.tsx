@@ -49,38 +49,36 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Welcome to SplitCar!</CardTitle>
-          <CardDescription>
-            Let&apos;s get you set up. What&apos;s your name?
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Your Name</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoFocus
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading || !name.trim()}
-            >
-              {loading ? "Saving..." : "Continue"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Welcome to SplitCar!</CardTitle>
+        <CardDescription>
+          Let&apos;s get you set up. What&apos;s your name?
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Your Name</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="John Doe"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={loading || !name.trim()}
+          >
+            {loading ? "Saving..." : "Continue"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
