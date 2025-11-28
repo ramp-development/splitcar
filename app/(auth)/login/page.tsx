@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -46,8 +46,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Welcome to SplitCar</CardTitle>
           <CardDescription>
@@ -58,17 +57,18 @@ export default function LoginPage() {
           <form onSubmit={handleSendOTP} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input
+              <PhoneInput
                 id="phone"
-                type="tel"
-                placeholder="+1 (555) 123-4567"
+                placeholder="Enter phone number"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={setPhone}
                 required
               />
-              <p className="text-sm text-muted-foreground">
-                For testing, use any number like +1 (555) XXX-XXXX
-              </p>
+              {process.env.NODE_ENV === "development" && (
+                <p className="text-sm text-muted-foreground">
+                  For testing, use any number like +1 (555) XXX-XXXX
+                </p>
+              )}
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Sending..." : "Send OTP"}
@@ -76,6 +76,5 @@ export default function LoginPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
   );
 }
