@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -310,17 +311,16 @@ export default function MembersPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="member-phone">Phone (optional)</Label>
-                  <Input
+                  <PhoneInput
                     id="member-phone"
-                    type="tel"
                     value={memberForm.phone}
-                    onChange={(e) =>
+                    onChange={(value: string) =>
                       setMemberForm({
                         ...memberForm,
-                        phone: e.target.value,
+                        phone: value,
                       })
                     }
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="Enter phone number"
                   />
                 </div>
                 <div className="flex items-center justify-between">
