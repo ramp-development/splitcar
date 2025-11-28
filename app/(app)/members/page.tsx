@@ -25,6 +25,7 @@ import { createMemberColumns, Member } from "@/components/members/columns";
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [carId, setCarId] = useState<string | null>(null);
+  const [carName, setCarName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -47,7 +48,7 @@ export default function MembersPage() {
         // Get user's car
         const { data: carData } = await supabase
           .from("cars")
-          .select("id")
+          .select("id, name")
           .eq("owner_id", user.id)
           .single();
 
@@ -57,6 +58,7 @@ export default function MembersPage() {
         }
 
         setCarId(carData.id);
+        setCarName(carData.name);
 
         // Get members
         const { data: membersData, error } = await supabase
@@ -228,11 +230,50 @@ export default function MembersPage() {
     }
   }
 
+  async function handleInviteMember(member: Member) {
+    if (!member.phone) {
+      toast.error("Member has no phone number");
+      return;
+    }
+
+    // Create invite URL with phone number as parameter
+    const inviteUrl = `${window.location.origin}/login?phone=${encodeURIComponent(member.phone)}`;
+    const inviteMessage = `Hi ${member.name.split(" ")[0]}! You've been added to our SplitCar group. Click here to join: ${inviteUrl}`;
+
+    // Try Web Share API first (mobile-friendly)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Join the ${carName} group in SplitCar`,
+          text: inviteMessage,
+        });
+        toast.success("Invite shared!");
+      } catch (error) {
+        // User cancelled the share or it failed
+        if ((error as Error).name !== "AbortError") {
+          // Fallback to clipboard
+          fallbackToCopy(inviteMessage);
+        }
+      }
+    } else {
+      // Fallback for desktop browsers
+      fallbackToCopy(inviteMessage);
+    }
+  }
+
+  function fallbackToCopy(message: string) {
+    navigator.clipboard.writeText(message);
+    toast.success("Invite link copied!", {
+      description: "Paste and send via your preferred messaging app",
+    });
+  }
+
   const columns = createMemberColumns(
     user?.id,
     handleEditMember,
     handleToggleGuest,
-    handleArchiveMember
+    handleArchiveMember,
+    handleInviteMember
   );
 
   const filteredMembers = showArchived
