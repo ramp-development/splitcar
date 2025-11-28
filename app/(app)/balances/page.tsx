@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { createBalanceColumns, Balance } from "@/components/balances/columns";
+import { Member } from "@/components/members/columns";
 
 type Car = {
   id: string;
@@ -64,13 +65,13 @@ export default function BalancesPage() {
         );
 
         if (membersError) throw membersError;
-        const membersData = (allMembers || []).filter((m: any) => !m.archived);
+        const membersData = (allMembers || []).filter(
+          (m: Member) => !m.archived
+        );
 
         // Get fuel fills using function (bypasses RLS)
-        const { data: fuelFillsData, error: fuelFillsError } = await supabase.rpc(
-          "get_car_fuel_fills",
-          { p_user_id: user.id }
-        );
+        const { data: fuelFillsData, error: fuelFillsError } =
+          await supabase.rpc("get_car_fuel_fills", { p_user_id: user.id });
 
         if (fuelFillsError) throw fuelFillsError;
 
@@ -83,10 +84,8 @@ export default function BalancesPage() {
         if (tripsError) throw tripsError;
 
         // Get settlements using function (bypasses RLS)
-        const { data: settlementsData, error: settlementsError } = await supabase.rpc(
-          "get_car_settlements",
-          { p_user_id: user.id }
-        );
+        const { data: settlementsData, error: settlementsError } =
+          await supabase.rpc("get_car_settlements", { p_user_id: user.id });
 
         if (settlementsError) throw settlementsError;
 
@@ -94,7 +93,7 @@ export default function BalancesPage() {
         const costPerKm =
           carData.avg_price_per_litre / carData.efficiency_km_per_litre;
 
-        const calculatedBalances = (membersData || []).map((member) => {
+        const calculatedBalances = (membersData || []).map((member: Member) => {
           // Calculate fuel paid
           const fuelPaid = (fuelFillsData || [])
             .filter((fill: FuelFill) => fill.payer_member_id === member.id)
@@ -115,8 +114,7 @@ export default function BalancesPage() {
           // Calculate settlements received
           const settlementsReceived = (settlementsData || [])
             .filter(
-              (settlement: Settlement) =>
-                settlement.to_member_id === member.id
+              (settlement: Settlement) => settlement.to_member_id === member.id
             )
             .reduce(
               (sum: number, settlement: Settlement) => sum + settlement.amount,
@@ -152,18 +150,20 @@ export default function BalancesPage() {
         });
 
         // Sort balances: current user first, then non-guests alphabetically, then guests alphabetically
-        const sortedBalances = calculatedBalances.sort((a, b) => {
-          // Current user first
-          if (a.user_id === user.id) return -1;
-          if (b.user_id === user.id) return 1;
+        const sortedBalances = calculatedBalances.sort(
+          (a: Balance, b: Balance) => {
+            // Current user first
+            if (a.user_id === user.id) return -1;
+            if (b.user_id === user.id) return 1;
 
-          // Then members before guests
-          if (!a.is_guest && b.is_guest) return -1;
-          if (a.is_guest && !b.is_guest) return 1;
+            // Then members before guests
+            if (!a.is_guest && b.is_guest) return -1;
+            if (a.is_guest && !b.is_guest) return 1;
 
-          // Within same group, sort alphabetically
-          return a.member_name.localeCompare(b.member_name);
-        });
+            // Within same group, sort alphabetically
+            return a.member_name.localeCompare(b.member_name);
+          }
+        );
 
         setBalances(sortedBalances);
       } catch (error) {
