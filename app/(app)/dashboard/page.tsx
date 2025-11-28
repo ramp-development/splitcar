@@ -119,7 +119,9 @@ export default function DashboardPage() {
 
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Welcome back, {userName}!</h1>
+          <h1 className="text-3xl font-bold mb-1">
+            Welcome back, {userName?.split(" ")[0] || userName}!
+          </h1>
           <p className="text-muted-foreground">Your SplitCar overview</p>
         </div>
 
