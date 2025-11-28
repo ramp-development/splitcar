@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getUserCarId } from "@/lib/queries/car";
 import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,46 +46,51 @@ export default function MembersPage() {
       const supabase = createClient();
 
       try {
-        // Get user's car
-        const { data: carData } = await supabase
-          .from("cars")
-          .select("id, name")
-          .eq("owner_id", user.id)
-          .single();
+        // Get user's car (either owned or member)
+        const carIdResult = await getUserCarId(supabase, user.id);
 
-        if (!carData) {
+        if (!carIdResult) {
           router.push("/dashboard");
           return;
         }
 
-        setCarId(carData.id);
-        setCarName(carData.name);
+        // Get car details
+        const { data: carData } = await supabase
+          .from("cars")
+          .select("name")
+          .eq("id", carIdResult)
+          .single();
 
-        // Get members
-        const { data: membersData, error } = await supabase
-          .from("members")
-          .select("*")
-          .eq("car_id", carData.id);
+        setCarId(carIdResult);
+        setCarName(carData?.name || "");
+
+        // Get members using function to bypass RLS infinite recursion
+        const { data: membersData, error } = await supabase.rpc(
+          "get_car_members",
+          { p_user_id: user.id }
+        );
 
         if (error) throw error;
 
         // Sort members: current user first, then members, then guests
-        const sortedMembers = (membersData || []).sort((a, b) => {
-          if (a.user_id === user.id) return -1;
-          if (b.user_id === user.id) return 1;
+        const sortedMembers = (membersData || []).sort(
+          (a: Member, b: Member) => {
+            if (a.user_id === user.id) return -1;
+            if (b.user_id === user.id) return 1;
 
-          // Then members before guests
-          if (!a.is_guest && b.is_guest) return -1;
-          if (a.is_guest && !b.is_guest) return 1;
+            // Then members before guests
+            if (!a.is_guest && b.is_guest) return -1;
+            if (a.is_guest && !b.is_guest) return 1;
 
-          // Within same group, sort alphabetically
-          return a.name.localeCompare(b.name);
-        });
+            // Within same group, sort alphabetically
+            return a.name.localeCompare(b.name);
+          }
+        );
 
         setMembers(sortedMembers);
       } catch (error) {
-        console.error(error);
         toast.error("Failed to load members");
+        console.error(error);
       } finally {
         setLoading(false);
       }

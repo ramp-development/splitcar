@@ -62,16 +62,11 @@ export function createMemberColumns(
       header: "Type",
       cell: ({ row }) => {
         const isGuest = row.getValue("is_guest") as boolean;
-        const isOwner = row.original.user_id === currentUserId;
-
-        if (isOwner) {
-          return <Badge>Owner</Badge>;
-        }
 
         return isGuest ? (
           <Badge variant="outline">Guest</Badge>
         ) : (
-          <Badge variant="secondary">Member</Badge>
+          <Badge variant="secondary">Owner</Badge>
         );
       },
     },

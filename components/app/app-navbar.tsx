@@ -25,10 +25,6 @@ export function AppNavbar() {
 
   const navigationItems = [
     {
-      label: "Dashboard",
-      href: "/dashboard",
-    },
-    {
       label: "Members",
       href: "/members",
     },
@@ -43,6 +39,10 @@ export function AppNavbar() {
     {
       label: "Balances",
       href: "/balances",
+    },
+    {
+      label: "Settlements",
+      href: "/settlements",
     },
   ];
 

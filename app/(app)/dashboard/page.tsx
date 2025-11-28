@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/client";
+import { getUserCar } from "@/lib/queries/car";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,6 +25,7 @@ import {
 export default function DashboardPage() {
   const { user } = useAuth();
   const [userName, setUserName] = useState<string | null>(null);
+  const [carName, setCarName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasCar, setHasCar] = useState(false);
   const router = useRouter();
@@ -46,14 +48,14 @@ export default function DashboardPage() {
         return;
       }
 
-      // Check if user has a car
-      const { data: carData } = await supabase
-        .from("cars")
-        .select("id")
-        .eq("owner_id", user.id)
-        .maybeSingle();
+      // Get car details using function (bypasses RLS)
+      const carData = await getUserCar(supabase, user.id);
+
+      console.log("[DASHBOARD DEBUG] User ID:", user.id);
+      console.log("[DASHBOARD DEBUG] Car data:", carData);
 
       setUserName(userData.name);
+      setCarName(carData?.name || null);
       setHasCar(!!carData);
       setLoading(false);
     }
@@ -123,6 +125,11 @@ export default function DashboardPage() {
             Welcome back, {userName?.split(" ")[0] || userName}!
           </h1>
           <p className="text-muted-foreground">Your SplitCar overview</p>
+          {carName && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Car: <span className="font-medium text-foreground">{carName}</span>
+            </p>
+          )}
         </div>
 
         <div className="space-y-4">

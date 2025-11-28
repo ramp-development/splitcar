@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
+import { getUserCar } from "@/lib/queries/car";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
@@ -47,13 +48,8 @@ export default function BalancesPage() {
       const supabase = createClient();
 
       try {
-        // Get user's car
-        const { data: carData } = await supabase
-          .from("cars")
-          .select("id, currency, efficiency_km_per_litre, avg_price_per_litre")
-          .eq("owner_id", user.id)
-          .single();
-
+        // Get user's car using function (bypasses RLS)
+        const carData = await getUserCar(supabase, user.id);
         if (!carData) {
           router.push("/dashboard");
           return;
@@ -61,38 +57,36 @@ export default function BalancesPage() {
 
         setCar(carData);
 
-        // Get members (non-archived)
-        const { data: membersData, error: membersError } = await supabase
-          .from("members")
-          .select("id, name, archived")
-          .eq("car_id", carData.id)
-          .eq("archived", false)
-          .order("name");
+        // Get members using function (bypasses RLS)
+        const { data: allMembers, error: membersError } = await supabase.rpc(
+          "get_car_members",
+          { p_user_id: user.id }
+        );
 
         if (membersError) throw membersError;
+        const membersData = (allMembers || []).filter((m: any) => !m.archived);
 
-        // Get fuel fills
-        const { data: fuelFillsData, error: fuelFillsError } = await supabase
-          .from("fuel_fills")
-          .select("payer_member_id, amount")
-          .eq("car_id", carData.id);
+        // Get fuel fills using function (bypasses RLS)
+        const { data: fuelFillsData, error: fuelFillsError } = await supabase.rpc(
+          "get_car_fuel_fills",
+          { p_user_id: user.id }
+        );
 
         if (fuelFillsError) throw fuelFillsError;
 
-        // Get trips
-        const { data: tripsData, error: tripsError } = await supabase
-          .from("trips")
-          .select("distance_km, passenger_member_ids")
-          .eq("car_id", carData.id);
+        // Get trips using function (bypasses RLS)
+        const { data: tripsData, error: tripsError } = await supabase.rpc(
+          "get_car_trips",
+          { p_user_id: user.id }
+        );
 
         if (tripsError) throw tripsError;
 
-        // Get settlements
-        const { data: settlementsData, error: settlementsError } =
-          await supabase
-            .from("settlements")
-            .select("from_member_id, to_member_id, amount")
-            .eq("car_id", carData.id);
+        // Get settlements using function (bypasses RLS)
+        const { data: settlementsData, error: settlementsError } = await supabase.rpc(
+          "get_car_settlements",
+          { p_user_id: user.id }
+        );
 
         if (settlementsError) throw settlementsError;
 
@@ -152,10 +146,26 @@ export default function BalancesPage() {
             settlements_received: settlementsReceived,
             settlements_sent: settlementsSent,
             net_balance: netBalance,
+            is_guest: member.is_guest,
+            user_id: member.user_id,
           };
         });
 
-        setBalances(calculatedBalances);
+        // Sort balances: current user first, then non-guests alphabetically, then guests alphabetically
+        const sortedBalances = calculatedBalances.sort((a, b) => {
+          // Current user first
+          if (a.user_id === user.id) return -1;
+          if (b.user_id === user.id) return 1;
+
+          // Then members before guests
+          if (!a.is_guest && b.is_guest) return -1;
+          if (a.is_guest && !b.is_guest) return 1;
+
+          // Within same group, sort alphabetically
+          return a.member_name.localeCompare(b.member_name);
+        });
+
+        setBalances(sortedBalances);
       } catch (error) {
         console.error(error);
         toast.error("Failed to load balances");

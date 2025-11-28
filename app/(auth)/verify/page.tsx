@@ -56,12 +56,34 @@ export default function VerifyPage() {
 
       if (error) throw error;
 
-      // Link any members with this phone number to the user
-      await supabase
-        .from("members")
-        .update({ user_id: data.user?.id })
-        .eq("phone", phone)
-        .is("user_id", null);
+      // Get the actual phone from the authenticated user
+      const userPhone = data.user?.phone;
+      const userId = data.user?.id;
+
+      console.log("[AUTO-LINK DEBUG] User phone from auth:", userPhone);
+      console.log("[AUTO-LINK DEBUG] User ID:", userId);
+
+      // Auto-link member using server-side function (bypasses RLS)
+      if (userPhone && userId) {
+        const { data: linkResult, error: linkError } = await supabase.rpc(
+          "auto_link_member_by_phone",
+          {
+            p_user_id: userId,
+            p_phone: userPhone,
+          }
+        );
+
+        console.log("[AUTO-LINK DEBUG] Auto-link result:", linkResult);
+        console.log("[AUTO-LINK DEBUG] Auto-link error:", linkError);
+
+        if (linkError) {
+          console.error("Failed to auto-link member:", linkError);
+        } else if (linkResult) {
+          console.log("[AUTO-LINK DEBUG] Successfully linked member!");
+        } else {
+          console.log("[AUTO-LINK DEBUG] No matching member found to link");
+        }
+      }
 
       // Check if user has a name set
       const { data: userData } = await supabase

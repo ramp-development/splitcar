@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
+import { getUserCar } from "@/lib/queries/car";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -66,63 +67,43 @@ export default function SettlementsPage() {
       const supabase = createClient();
 
       try {
-        // Get user's car
-        const { data: carData } = await supabase
-          .from("cars")
-          .select("id, currency")
-          .eq("owner_id", user.id)
-          .single();
-
+        // Get user's car using function (bypasses RLS)
+        const carData = await getUserCar(supabase, user.id);
         if (!carData) {
           router.push("/dashboard");
           return;
         }
 
-        setCar(carData);
+        setCar({ id: carData.id, currency: carData.currency });
 
-        // Get members
-        const { data: membersData, error: membersError } = await supabase
-          .from("members")
-          .select("id, name, archived, user_id, is_guest")
-          .eq("car_id", carData.id)
-          .order("name");
+        // Get members using function (bypasses RLS)
+        const { data: allMembers, error: membersError } = await supabase.rpc(
+          "get_car_members",
+          { p_user_id: user.id }
+        );
 
         if (membersError) throw membersError;
-        setMembers(membersData || []);
+        setMembers(allMembers || []);
 
-        // Get settlements with member names
-        const { data: settlementsData, error: settlementsError } =
-          await supabase
-            .from("settlements")
-            .select(
-              `
-            *,
-            from_member:members!settlements_from_member_id_fkey (
-              name
-            ),
-            to_member:members!settlements_to_member_id_fkey (
-              name
-            )
-          `
-            )
-            .eq("car_id", carData.id)
-            .order("created_at", { ascending: false });
+        // Get settlements using function (bypasses RLS)
+        const { data: settlementsData, error: settlementsError } = await supabase.rpc(
+          "get_car_settlements",
+          { p_user_id: user.id }
+        );
 
         if (settlementsError) throw settlementsError;
 
-        // Transform data to include member names
-        const transformedSettlements = (settlementsData || []).map(
-          (settlement) => ({
-            id: settlement.id,
-            car_id: settlement.car_id,
-            from_member_id: settlement.from_member_id,
-            to_member_id: settlement.to_member_id,
-            amount: settlement.amount,
-            created_at: settlement.created_at,
-            from_member_name: settlement.from_member?.name || "Unknown",
-            to_member_name: settlement.to_member?.name || "Unknown",
-          })
-        );
+        // Transform settlements data
+        const transformedSettlements = (settlementsData || []).map((settlement: any) => ({
+          id: settlement.id,
+          car_id: settlement.car_id,
+          from_member_id: settlement.from_member_id,
+          to_member_id: settlement.to_member_id,
+          from_member_name: settlement.from_member_name || "Unknown",
+          to_member_name: settlement.to_member_name || "Unknown",
+          amount: settlement.amount,
+          created_at: settlement.created_at,
+        }));
 
         setSettlements(transformedSettlements);
       } catch (error) {
