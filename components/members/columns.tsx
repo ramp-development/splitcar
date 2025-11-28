@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +26,8 @@ export function createMemberColumns(
   currentUserId: string | undefined,
   onEdit: (member: Member) => void,
   onToggleGuest: (memberId: string, isGuest: boolean) => void,
-  onArchive: (memberId: string, archived: boolean) => void
+  onArchive: (memberId: string, archived: boolean) => void,
+  onInvite: (member: Member) => void
 ): ColumnDef<Member>[] {
   return [
     {
@@ -75,10 +76,29 @@ export function createMemberColumns(
       },
     },
     {
+      accessorKey: "user_id",
+      header: "Status",
+      cell: ({ row }) => {
+        const hasAccount = !!row.original.user_id;
+        const hasPhone = !!row.original.phone;
+
+        if (hasAccount) {
+          return <Badge variant="default">Joined</Badge>;
+        }
+
+        if (hasPhone) {
+          return <Badge variant="secondary">Pending</Badge>;
+        }
+
+        return <Badge variant="outline">No phone</Badge>;
+      },
+    },
+    {
       id: "actions",
       cell: ({ row }) => {
         const member = row.original;
         const isCurrentUser = member.user_id === currentUserId;
+        const canInvite = member.phone && !member.user_id;
 
         return (
           <DropdownMenu>
@@ -90,6 +110,12 @@ export function createMemberColumns(
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {canInvite && (
+                <DropdownMenuItem onClick={() => onInvite(member)}>
+                  Send Invite
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => onEdit(member)}>
                 Edit
               </DropdownMenuItem>
@@ -103,6 +129,7 @@ export function createMemberColumns(
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onArchive(member.id, !member.archived)}
+                    className="text-destructive"
                   >
                     {member.archived ? "Unarchive" : "Archive"}
                   </DropdownMenuItem>
