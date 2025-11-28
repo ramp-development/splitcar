@@ -15,7 +15,9 @@
 - ✅ Fuel fills feature complete
 - ✅ Trips feature complete
 - ✅ Balances & Settlements complete
-- ✅ **MVP COMPLETE!**
+- ✅ Production build successful
+- ✅ Deployed to Vercel
+- ✅ **MVP COMPLETE & LIVE!**
 
 ## Overview
 
@@ -263,6 +265,15 @@ Where:
 - [x] Auto-select current user as settlement sender
 - [x] Validate From ≠ To in settlement form
 - [x] Color-coded balances (green = owed, red = owes)
+
+### Phase 7: Deployment ✅
+
+- [x] Fixed landing page to use server component (removed "use client")
+- [x] Replaced useRouter with Next.js Link components
+- [x] Production build successful (pnpm build)
+- [x] Deployed to Vercel
+- [x] Environment variables configured (Supabase URL + anon key)
+- [x] Supabase redirect URLs updated for production
 
 ## Key Files & Structure
 
