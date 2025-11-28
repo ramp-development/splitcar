@@ -10,6 +10,8 @@ export type Balance = {
   settlements_received: number;
   settlements_sent: number;
   net_balance: number;
+  is_guest: boolean;
+  user_id: string | null;
 };
 
 export function createBalanceColumns(

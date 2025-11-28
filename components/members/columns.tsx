@@ -26,7 +26,8 @@ export function createMemberColumns(
   currentUserId: string | undefined,
   onEdit: (member: Member) => void,
   onToggleGuest: (memberId: string, isGuest: boolean) => void,
-  onArchive: (memberId: string, archived: boolean) => void
+  onArchive: (memberId: string, archived: boolean) => void,
+  onInvite: (member: Member) => void
 ): ColumnDef<Member>[] {
   return [
     {
@@ -61,17 +62,30 @@ export function createMemberColumns(
       header: "Type",
       cell: ({ row }) => {
         const isGuest = row.getValue("is_guest") as boolean;
-        const isOwner = row.original.user_id === currentUserId;
-
-        if (isOwner) {
-          return <Badge>Owner</Badge>;
-        }
 
         return isGuest ? (
           <Badge variant="outline">Guest</Badge>
         ) : (
-          <Badge variant="secondary">Member</Badge>
+          <Badge variant="secondary">Owner</Badge>
         );
+      },
+    },
+    {
+      accessorKey: "user_id",
+      header: "Status",
+      cell: ({ row }) => {
+        const hasAccount = !!row.original.user_id;
+        const hasPhone = !!row.original.phone;
+
+        if (hasAccount) {
+          return <Badge variant="default">Joined</Badge>;
+        }
+
+        if (hasPhone) {
+          return <Badge variant="secondary">Pending</Badge>;
+        }
+
+        return <Badge variant="outline">No phone</Badge>;
       },
     },
     {
@@ -79,6 +93,7 @@ export function createMemberColumns(
       cell: ({ row }) => {
         const member = row.original;
         const isCurrentUser = member.user_id === currentUserId;
+        const canInvite = member.phone && !member.user_id;
 
         return (
           <DropdownMenu>
@@ -90,6 +105,12 @@ export function createMemberColumns(
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {canInvite && (
+                <DropdownMenuItem onClick={() => onInvite(member)}>
+                  Send Invite
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => onEdit(member)}>
                 Edit
               </DropdownMenuItem>
@@ -103,6 +124,7 @@ export function createMemberColumns(
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onArchive(member.id, !member.archived)}
+                    className="text-destructive"
                   >
                     {member.archived ? "Unarchive" : "Archive"}
                   </DropdownMenuItem>

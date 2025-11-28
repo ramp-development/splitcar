@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
+import { getUserCar } from "@/lib/queries/car";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,55 +72,46 @@ export default function FuelFillsPage() {
       const supabase = createClient();
 
       try {
-        // Get user's car
-        const { data: carData } = await supabase
-          .from("cars")
-          .select("id, currency")
-          .eq("owner_id", user.id)
-          .single();
-
+        // Get user's car using function (bypasses RLS)
+        const carData = await getUserCar(supabase, user.id);
         if (!carData) {
           router.push("/dashboard");
           return;
         }
 
-        setCar(carData);
+        setCar({ id: carData.id, currency: carData.currency });
 
-        // Get members (non-archived)
-        const { data: membersData, error: membersError } = await supabase
-          .from("members")
-          .select("id, name, archived, user_id, is_guest")
-          .eq("car_id", carData.id)
-          .order("name");
+        // Get members using function (bypasses RLS)
+        const { data: allMembers, error: membersError } = await supabase.rpc(
+          "get_car_members",
+          { p_user_id: user.id }
+        );
 
         if (membersError) throw membersError;
-        setMembers(membersData || []);
 
-        // Get fuel fills with member names
-        const { data: fuelFillsData, error: fuelFillsError } = await supabase
-          .from("fuel_fills")
-          .select(
-            `
-            *,
-            members!fuel_fills_payer_member_id_fkey (
-              name
-            )
-          `
-          )
-          .eq("car_id", carData.id)
-          .order("date", { ascending: false });
+        // Filter and sort members
+        const membersData = (allMembers || []).sort((a: Member, b: Member) =>
+          a.name.localeCompare(b.name)
+        );
+        setMembers(membersData);
+
+        // Get fuel fills using function (bypasses RLS)
+        const { data: fuelFillsData, error: fuelFillsError } = await supabase.rpc(
+          "get_car_fuel_fills",
+          { p_user_id: user.id }
+        );
 
         if (fuelFillsError) throw fuelFillsError;
 
-        // Transform data to include payer_name
-        const transformedFuelFills = (fuelFillsData || []).map((fill) => ({
+        // Data already includes payer_name from the function
+        const transformedFuelFills = (fuelFillsData || []).map((fill: any) => ({
           id: fill.id,
           car_id: fill.car_id,
           payer_member_id: fill.payer_member_id,
           amount: fill.amount,
           date: fill.date,
           created_at: fill.created_at,
-          payer_name: fill.members?.name || "Unknown",
+          payer_name: fill.payer_name || "Unknown",
         }));
 
         setFuelFills(transformedFuelFills);

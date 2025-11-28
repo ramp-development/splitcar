@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getUserCarId } from "@/lib/queries/car";
 import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -24,6 +26,7 @@ import { createMemberColumns, Member } from "@/components/members/columns";
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [carId, setCarId] = useState<string | null>(null);
+  const [carName, setCarName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -43,45 +46,51 @@ export default function MembersPage() {
       const supabase = createClient();
 
       try {
-        // Get user's car
-        const { data: carData } = await supabase
-          .from("cars")
-          .select("id")
-          .eq("owner_id", user.id)
-          .single();
+        // Get user's car (either owned or member)
+        const carIdResult = await getUserCarId(supabase, user.id);
 
-        if (!carData) {
+        if (!carIdResult) {
           router.push("/dashboard");
           return;
         }
 
-        setCarId(carData.id);
+        // Get car details
+        const { data: carData } = await supabase
+          .from("cars")
+          .select("name")
+          .eq("id", carIdResult)
+          .single();
 
-        // Get members
-        const { data: membersData, error } = await supabase
-          .from("members")
-          .select("*")
-          .eq("car_id", carData.id);
+        setCarId(carIdResult);
+        setCarName(carData?.name || "");
+
+        // Get members using function to bypass RLS infinite recursion
+        const { data: membersData, error } = await supabase.rpc(
+          "get_car_members",
+          { p_user_id: user.id }
+        );
 
         if (error) throw error;
 
         // Sort members: current user first, then members, then guests
-        const sortedMembers = (membersData || []).sort((a, b) => {
-          if (a.user_id === user.id) return -1;
-          if (b.user_id === user.id) return 1;
+        const sortedMembers = (membersData || []).sort(
+          (a: Member, b: Member) => {
+            if (a.user_id === user.id) return -1;
+            if (b.user_id === user.id) return 1;
 
-          // Then members before guests
-          if (!a.is_guest && b.is_guest) return -1;
-          if (a.is_guest && !b.is_guest) return 1;
+            // Then members before guests
+            if (!a.is_guest && b.is_guest) return -1;
+            if (a.is_guest && !b.is_guest) return 1;
 
-          // Within same group, sort alphabetically
-          return a.name.localeCompare(b.name);
-        });
+            // Within same group, sort alphabetically
+            return a.name.localeCompare(b.name);
+          }
+        );
 
         setMembers(sortedMembers);
       } catch (error) {
-        console.error(error);
         toast.error("Failed to load members");
+        console.error(error);
       } finally {
         setLoading(false);
       }
@@ -227,11 +236,50 @@ export default function MembersPage() {
     }
   }
 
+  async function handleInviteMember(member: Member) {
+    if (!member.phone) {
+      toast.error("Member has no phone number");
+      return;
+    }
+
+    // Create invite URL with phone number as parameter
+    const inviteUrl = `${window.location.origin}/login?phone=${encodeURIComponent(member.phone)}`;
+    const inviteMessage = `Hi ${member.name.split(" ")[0]}! You've been added to our SplitCar group. Click here to join: ${inviteUrl}`;
+
+    // Try Web Share API first (mobile-friendly)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Join the ${carName} group in SplitCar`,
+          text: inviteMessage,
+        });
+        toast.success("Invite shared!");
+      } catch (error) {
+        // User cancelled the share or it failed
+        if ((error as Error).name !== "AbortError") {
+          // Fallback to clipboard
+          fallbackToCopy(inviteMessage);
+        }
+      }
+    } else {
+      // Fallback for desktop browsers
+      fallbackToCopy(inviteMessage);
+    }
+  }
+
+  function fallbackToCopy(message: string) {
+    navigator.clipboard.writeText(message);
+    toast.success("Invite link copied!", {
+      description: "Paste and send via your preferred messaging app",
+    });
+  }
+
   const columns = createMemberColumns(
     user?.id,
     handleEditMember,
     handleToggleGuest,
-    handleArchiveMember
+    handleArchiveMember,
+    handleInviteMember
   );
 
   const filteredMembers = showArchived
@@ -310,17 +358,16 @@ export default function MembersPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="member-phone">Phone (optional)</Label>
-                  <Input
+                  <PhoneInput
                     id="member-phone"
-                    type="tel"
                     value={memberForm.phone}
-                    onChange={(e) =>
+                    onChange={(value: string) =>
                       setMemberForm({
                         ...memberForm,
-                        phone: e.target.value,
+                        phone: value,
                       })
                     }
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="Enter phone number"
                   />
                 </div>
                 <div className="flex items-center justify-between">

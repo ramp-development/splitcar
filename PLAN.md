@@ -15,7 +15,11 @@
 - ✅ Fuel fills feature complete
 - ✅ Trips feature complete
 - ✅ Balances & Settlements complete
-- ✅ **MVP COMPLETE!**
+- ✅ Production build successful
+- ✅ Deployed to Vercel
+- ✅ Member invites with auto-linking
+- ✅ Multi-user access (owners + members)
+- ✅ **MVP COMPLETE & LIVE!**
 
 ## Overview
 
@@ -213,6 +217,8 @@ Where:
 - [x] Add AuthProvider and Toaster to root layout
 - [x] Build onboarding page for name collection
 - [x] Auto-link members with matching phone numbers on login
+- [x] Phone number normalization (E.164 format handling)
+- [x] Auto-copy member name to user record on linking
 
 ### Phase 3: Car & Members ✅
 
@@ -226,6 +232,9 @@ Where:
 - [x] Archive/unarchive members (migration 004)
 - [x] "Show archived" toggle (only visible when archived members exist)
 - [x] Member type badges (Owner/Guest/Member)
+- [x] Member invite system with Web Share API
+- [x] Status column (Joined/Pending/No phone)
+- [x] Pre-filled phone login via URL parameter
 
 ### Phase 4: Navigation & Layout ✅
 
@@ -263,6 +272,30 @@ Where:
 - [x] Auto-select current user as settlement sender
 - [x] Validate From ≠ To in settlement form
 - [x] Color-coded balances (green = owed, red = owes)
+
+### Phase 7: Deployment ✅
+
+- [x] Fixed landing page to use server component (removed "use client")
+- [x] Replaced useRouter with Next.js Link components
+- [x] Production build successful (pnpm build)
+- [x] Deployed to Vercel
+- [x] Environment variables configured (Supabase URL + anon key)
+- [x] Supabase redirect URLs updated for production
+
+### Phase 8: Multi-User Support ✅
+
+- [x] SECURITY DEFINER functions to bypass RLS (migrations 009-019)
+- [x] Member auto-linking on login (migration 009)
+- [x] Multi-user car access (owners + members)
+- [x] Database functions for all data queries:
+  - [x] `get_user_car()` - Get car for owner or member
+  - [x] `get_car_members()` - Get all members
+  - [x] `get_car_fuel_fills()` - Get fuel fills with payer names
+  - [x] `get_car_trips()` - Get trips with dates
+  - [x] `get_car_settlements()` - Get settlements with member names
+- [x] Updated all pages to support member access
+- [x] Consistent member sorting (current user, members, guests)
+- [x] Fixed date display in fuel fills and trips tables
 
 ## Key Files & Structure
 
@@ -321,16 +354,28 @@ supabase/
     ├── 004_add_archived_to_members.sql
     ├── 005_add_name_to_trips.sql
     ├── 006_add_date_to_fuel_fills.sql
-    └── 007_add_date_to_trips.sql
+    ├── 007_add_date_to_trips.sql
+    ├── 008_member_self_link_policy.sql
+    ├── 009_member_auto_link_function.sql
+    ├── 010_get_user_car_id_function.sql
+    ├── 011_members_rls_for_members.sql
+    ├── 012_remove_member_link_policy.sql
+    ├── 013_allow_member_inserts_function.sql
+    ├── 014_allow_member_data_access.sql
+    ├── 015_get_car_members_function.sql
+    ├── 016_get_user_car_function.sql
+    ├── 017_get_car_fuel_fills_function.sql
+    ├── 018_get_car_trips_function.sql
+    └── 019_get_car_settlements_function.sql
 ```
 
 ## MVP Constraints
 
-- One car per user
+- One car per user/member
 - Simple equal splits (no weighted splits)
 - Frontend-calculated balances (no complex DB queries)
 - Minimal styling (use shadcn/ui components)
 - No editing/deletion of expenses (archive instead)
 - No multi-currency support
 - Members cannot be deleted (use archive)
-- Owner-only access (no sharing between users yet)
+- ~~Owner-only access (no sharing between users yet)~~ ✅ Multi-user support complete!

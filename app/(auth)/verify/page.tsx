@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -14,9 +15,11 @@ import {
 import {
   InputOTP,
   InputOTPGroup,
+  InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { toast } from "sonner";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 export default function VerifyPage() {
   const [otp, setOtp] = useState("");
@@ -53,12 +56,34 @@ export default function VerifyPage() {
 
       if (error) throw error;
 
-      // Link any members with this phone number to the user
-      await supabase
-        .from("members")
-        .update({ user_id: data.user?.id })
-        .eq("phone", phone)
-        .is("user_id", null);
+      // Get the actual phone from the authenticated user
+      const userPhone = data.user?.phone;
+      const userId = data.user?.id;
+
+      console.log("[AUTO-LINK DEBUG] User phone from auth:", userPhone);
+      console.log("[AUTO-LINK DEBUG] User ID:", userId);
+
+      // Auto-link member using server-side function (bypasses RLS)
+      if (userPhone && userId) {
+        const { data: linkResult, error: linkError } = await supabase.rpc(
+          "auto_link_member_by_phone",
+          {
+            p_user_id: userId,
+            p_phone: userPhone,
+          }
+        );
+
+        console.log("[AUTO-LINK DEBUG] Auto-link result:", linkResult);
+        console.log("[AUTO-LINK DEBUG] Auto-link error:", linkError);
+
+        if (linkError) {
+          console.error("Failed to auto-link member:", linkError);
+        } else if (linkResult) {
+          console.log("[AUTO-LINK DEBUG] Successfully linked member!");
+        } else {
+          console.log("[AUTO-LINK DEBUG] No matching member found to link");
+        }
+      }
 
       // Check if user has a name set
       const { data: userData } = await supabase
@@ -101,31 +126,47 @@ export default function VerifyPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Verify Your Phone</CardTitle>
-          <CardDescription>
-            Enter the 6-digit code sent to {phone}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleVerifyOTP} className="space-y-6">
-            <div className="flex justify-center">
-              <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Verify Your Phone</CardTitle>
+        <CardDescription>
+          Enter the 6-digit code sent to {phone}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleVerifyOTP} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="otp" className="sr-only">
+              One-Time Password
+            </Label>
+            <InputOTP
+              id="otp"
+              maxLength={6}
+              value={otp}
+              onChange={setOtp}
+              autoFocus
+              pattern={REGEXP_ONLY_DIGITS}
+              containerClassName="justify-between w-full"
+            >
+              <InputOTPGroup className="flex-1">
+                <InputOTPSlot index={0} className="flex-1" />
+                <InputOTPSlot index={1} className="flex-1" />
+                <InputOTPSlot index={2} className="flex-1" />
+              </InputOTPGroup>
+              <InputOTPSeparator />
+              <InputOTPGroup className="flex-1">
+                <InputOTPSlot index={3} className="flex-1" />
+                <InputOTPSlot index={4} className="flex-1" />
+                <InputOTPSlot index={5} className="flex-1" />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+          {process.env.NODE_ENV === "development" && (
             <p className="text-center text-sm text-muted-foreground">
               For testing, use OTP: 123456
             </p>
+          )}
+          <div className="space-y-3">
             <Button
               type="submit"
               className="w-full"
@@ -142,9 +183,9 @@ export default function VerifyPage() {
             >
               Resend OTP
             </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

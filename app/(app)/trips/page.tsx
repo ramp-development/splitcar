@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
+import { getUserCar } from "@/lib/queries/car";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,15 +69,8 @@ export default function TripsPage() {
       const supabase = createClient();
 
       try {
-        // Get user's car
-        const { data: carData } = await supabase
-          .from("cars")
-          .select(
-            "id, currency, distance_unit, efficiency_km_per_litre, avg_price_per_litre"
-          )
-          .eq("owner_id", user.id)
-          .single();
-
+        // Get user's car using function (bypasses RLS)
+        const carData = await getUserCar(supabase, user.id);
         if (!carData) {
           router.push("/dashboard");
           return;
@@ -84,32 +78,31 @@ export default function TripsPage() {
 
         setCar(carData);
 
-        // Get members
-        const { data: membersData, error: membersError } = await supabase
-          .from("members")
-          .select("id, name, archived, user_id, is_guest")
-          .eq("car_id", carData.id)
-          .order("name");
+        // Get members using function (bypasses RLS)
+        const { data: allMembers, error: membersError } = await supabase.rpc(
+          "get_car_members",
+          { p_user_id: user.id }
+        );
 
         if (membersError) throw membersError;
-        setMembers(membersData || []);
+        const membersData = allMembers || [];
+        setMembers(membersData);
 
-        // Get trips
-        const { data: tripsData, error: tripsError } = await supabase
-          .from("trips")
-          .select("*")
-          .eq("car_id", carData.id)
-          .order("date", { ascending: false });
+        // Get trips using function (bypasses RLS)
+        const { data: tripsData, error: tripsError } = await supabase.rpc(
+          "get_car_trips",
+          { p_user_id: user.id }
+        );
 
         if (tripsError) throw tripsError;
 
         // Transform trips data
         const transformedTrips = await Promise.all(
-          (tripsData || []).map(async (trip) => {
+          (tripsData || []).map(async (trip: Trip) => {
             // Get passenger names
             const passengerNames = (trip.passenger_member_ids || [])
               .map((id: string) => {
-                const member = membersData?.find((m) => m.id === id);
+                const member = membersData?.find((m: Member) => m.id === id);
                 return member?.name || "Unknown";
               })
               .filter(Boolean);
@@ -467,7 +460,10 @@ export default function TripsPage() {
                       <ChevronDownIcon className="h-4 w-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                  <PopoverContent
+                    className="w-auto overflow-hidden p-0"
+                    align="start"
+                  >
                     <Calendar
                       mode="single"
                       selected={tripForm.date}
