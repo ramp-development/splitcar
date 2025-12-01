@@ -10,6 +10,7 @@ import { calculateCostPerKm } from "@/lib/types/car";
 import { getSplitMemberIds } from "@/lib/types/expense";
 
 // Define minimal types needed for balance calculation
+type MemberForBalance = Pick<Member, "id" | "archived">;
 type ExpenseForBalance = Pick<
   Expense,
   "payer_id" | "amount" | "type" | "split_with"
@@ -26,13 +27,13 @@ type SettlementForBalance = Pick<Settlement, "from_id" | "to_id" | "amount">;
  * - Trips: Usage cost split among passengers based on distance
  * - Settlements: Direct payments between members
  */
-export function calculateMemberBalances(
-  members: Member[],
+export function calculateMemberBalances<T extends MemberForBalance>(
+  members: T[],
   expenses: ExpenseForBalance[],
   trips: TripForBalance[],
   settlements: SettlementForBalance[],
   car: Car
-): MemberBalance[] {
+): MemberBalance<T>[] {
   const costPerKm = calculateCostPerKm(car);
   const activeMemberIds = members.filter((m) => !m.archived).map((m) => m.id);
 

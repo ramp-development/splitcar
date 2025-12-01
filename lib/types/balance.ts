@@ -1,8 +1,8 @@
 import { Member } from "./member";
 
-// Balance calculation types
-export type MemberBalance = {
-  member: Member;
+// Generic balance calculation type that works with any member type
+export type MemberBalance<T extends { id: string; archived?: boolean | null } = Member> = {
+  member: T;
   fuelPaid: number;
   tripUsage: number;
   settlementsReceived: number;
@@ -11,21 +11,27 @@ export type MemberBalance = {
 };
 
 // Helper to determine if balance is positive (owed) or negative (owes)
-export function isOwed(balance: MemberBalance): boolean {
+export function isOwed<T extends { id: string; archived?: boolean | null }>(
+  balance: MemberBalance<T>
+): boolean {
   return balance.netBalance > 0;
 }
 
-export function owesAmount(balance: MemberBalance): boolean {
+export function owesAmount<T extends { id: string; archived?: boolean | null }>(
+  balance: MemberBalance<T>
+): boolean {
   return balance.netBalance < 0;
 }
 
-export function isSettled(balance: MemberBalance): boolean {
+export function isSettled<T extends { id: string; archived?: boolean | null }>(
+  balance: MemberBalance<T>
+): boolean {
   return Math.abs(balance.netBalance) < 0.01; // Within 1 cent
 }
 
 // Format balance for display
-export function getBalanceStatus(
-  balance: MemberBalance
+export function getBalanceStatus<T extends { id: string; archived?: boolean | null }>(
+  balance: MemberBalance<T>
 ): "owed" | "owes" | "settled" {
   if (isSettled(balance)) return "settled";
   return isOwed(balance) ? "owed" : "owes";
