@@ -2,6 +2,50 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { Car } from "@/lib/types";
 
 /**
+ * Check if user owns a car
+ * Returns car ID if user owns a car, null otherwise
+ * Throws error if database query fails
+ */
+export async function getOwnedCarId(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("cars")
+    .select("id")
+    .eq("owner_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to check car ownership: ${error.message}`);
+  }
+
+  return data?.id || null;
+}
+
+/**
+ * Check if user is a member of a car
+ * Returns car ID if user is a member, null otherwise
+ * Throws error if database query fails
+ */
+export async function getMemberCarId(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("members")
+    .select("car_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to check car membership: ${error.message}`);
+  }
+
+  return data?.car_id || null;
+}
+
+/**
  * Gets the car ID that a user has access to (either as owner or member)
  * Returns null if user has no car access
  * Throws error if database query fails
@@ -11,32 +55,11 @@ export async function getUserCarId(
   userId: string
 ): Promise<string | null> {
   // First check if user owns a car
-  const { data: ownedCar, error: ownedCarError } = await supabase
-    .from("cars")
-    .select("id")
-    .eq("owner_id", userId)
-    .maybeSingle();
-
-  if (ownedCarError) {
-    throw new Error(`Failed to check car ownership: ${ownedCarError.message}`);
-  }
-
-  if (ownedCar) {
-    return ownedCar.id;
-  }
+  const ownedCarId = await getOwnedCarId(supabase, userId);
+  if (ownedCarId) return ownedCarId;
 
   // If not owner, check if they're a member of a car
-  const { data: membership, error: membershipError } = await supabase
-    .from("members")
-    .select("car_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (membershipError) {
-    throw new Error(`Failed to check car membership: ${membershipError.message}`);
-  }
-
-  return membership?.car_id || null;
+  return getMemberCarId(supabase, userId);
 }
 
 /**
