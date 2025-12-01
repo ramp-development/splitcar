@@ -474,14 +474,22 @@ Create `docs/DATABASE_SECURITY.md`:
 
 ## Migration Checklist
 
-- [ ] Set up type generation workflow
-- [ ] Create new directory structure
-- [ ] Audit and document current RLS policies
-- [ ] Refactor queries and business logic
+### Phase 1: Foundation ✅ COMPLETE
+- [x] Set up type generation workflow
+- [x] Create new directory structure (lib/types, lib/queries, lib/actions, lib/services)
+- [x] Refactor queries and business logic
+- [x] Update all components to use new structure
+- [x] Split functions for single responsibility (getUserCarId → getOwnedCarId + getMemberCarId)
+- [x] Implement Pick/Omit types in server actions
+- [x] Consistent error handling across queries
+- [ ] Audit and document current RLS policies (NEXT)
+
+### Phase 2: User Experience
 - [ ] Implement invite system
 - [ ] Set up Clerk authentication
 - [ ] Migrate existing users
-- [ ] Update all components to use new structure
+
+### Phase 3: Testing & Deployment
 - [ ] Write tests for critical business logic
 - [ ] Update documentation
 - [ ] Deploy to staging
@@ -505,9 +513,45 @@ Create `docs/DATABASE_SECURITY.md`:
 3. **User Table**: ✅ Minimal - just store Clerk user ID, nothing else
 4. **Member Linking**: ✅ Direct via Clerk user ID (no email/phone matching)
 5. **Branch Strategy**: ✅ Work in `feature/v2-refactor` branch
+6. **Type Safety**: ✅ Use Pick/Omit in actions, explicit input types
+7. **Error Handling**: ✅ Throw errors in queries (consistent approach)
+8. **Function Design**: ✅ Single-purpose functions (SRP)
+
+---
+
+## Progress Summary
+
+**Current Branch**: `feature/v2-refactor` (7 commits ahead of main)
+
+**Latest Commits**:
+1. Made the plan (PLAN-V2.md)
+2. Added Supabase CLI and types
+3. Phase 1.1 & 1.2 - Database types and code refactoring foundation
+4. Complete Phase 1.2 - Server actions and refactored pages
+5. Use Pick/Omit types in server actions for better type safety
+6. Improve error handling in car queries
+7. Split getUserCarId into focused single-purpose functions
+
+**Files Created/Modified**:
+- `lib/types/` - 7 new type files with helpers (car, member, fuel-fill, trip, settlement, balance, index)
+- `lib/queries/` - 6 query files with error handling (cars, members, fuel-fills, trips, settlements, index)
+- `lib/actions/` - 4 action files with type safety (member, fuel-fill, trip, settlement + index)
+- `lib/services/` - 2 service files for business logic (balance-calculator, member-sorter + index)
+- Updated all page components (balances, fuel, members, settlements, trips, dashboard)
+- Build passing ✅
+
+**Phase 1.1 & 1.2 Status**: ✅ COMPLETE
+- Type generation workflow established
+- Clean architecture implemented
+- Type safety with Pick/Omit
+- Error handling consistent
+- Single-purpose functions
+
+**Next**: Phase 1.3 - RLS Audit & Cleanup
 
 ## Open Questions
 
 1. **Type Generation**: Manual or automated (CI/CD hook)?
 2. **Testing**: Unit tests, integration tests, or E2E tests first?
 3. **Deployment**: Blue-green deployment or feature flags for migration?
+4. **RLS Cleanup**: When to tackle Phase 1.3 vs moving to Phase 2?
