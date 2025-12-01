@@ -1,8 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import { Database } from "@/lib/types/database.types";
-
-type TripFromFunction =
-  Database["public"]["Functions"]["get_car_trips"]["Returns"][number];
+import { TripFromFunction } from "@/lib/types";
 
 /**
  * Get all trips for a car (bypasses RLS using database function)

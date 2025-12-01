@@ -1,24 +1,33 @@
-import { Member } from "@/lib/types";
+import { MemberFromFunction } from "@/lib/types";
 
 /**
- * Sort members by priority: current user first, then members, then guests, then alphabetically
+ * Sort members by priority: admin first, current user, owners, guests, then by join date
  */
 export function sortMembersByPriority(
-  members: Member[],
+  members: MemberFromFunction[],
   currentUserId: string | null
-): Member[] {
+): MemberFromFunction[] {
   return [...members].sort((a, b) => {
     // Current user first
     if (a.user_id === currentUserId && b.user_id !== currentUserId) return -1;
     if (b.user_id === currentUserId && a.user_id !== currentUserId) return 1;
 
-    // Then by guest status (members before guests)
-    if (a.is_guest !== b.is_guest) {
-      return a.is_guest ? 1 : -1;
+    // Admin first
+    if (a.is_admin !== b.is_admin) {
+      return a.is_admin ? -1 : 1;
     }
 
-    // Then alphabetically by name
-    return a.name.localeCompare(b.name);
+    // Then by role (owner before guest)
+    if (a.role !== b.role) {
+      return a.role === "owner" ? -1 : 1;
+    }
+
+    // Then by joined date (earliest first)
+    if (a.joined_at && b.joined_at) {
+      return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
+    }
+
+    return 0;
   });
 }
 
@@ -26,22 +35,36 @@ export function sortMembersByPriority(
  * Group members into categories for select dropdowns
  */
 export function groupMembersForSelect(
-  members: Member[],
+  members: MemberFromFunction[],
   currentUserId: string | null
 ) {
   const activeMembers = members.filter((m) => !m.archived);
 
   const currentUser = activeMembers.find((m) => m.user_id === currentUserId);
-  const otherMembers = activeMembers
-    .filter((m) => m.user_id !== currentUserId && !m.is_guest)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const ownerMembers = activeMembers
+    .filter((m) => m.user_id !== currentUserId && m.role === "owner")
+    .sort((a, b) => {
+      if (a.joined_at && b.joined_at) {
+        return (
+          new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
+        );
+      }
+      return 0;
+    });
   const guestMembers = activeMembers
-    .filter((m) => m.is_guest)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .filter((m) => m.role === "guest")
+    .sort((a, b) => {
+      if (a.joined_at && b.joined_at) {
+        return (
+          new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
+        );
+      }
+      return 0;
+    });
 
   return {
     currentUser,
-    otherMembers,
+    ownerMembers,
     guestMembers,
     activeMembers,
   };

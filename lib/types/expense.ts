@@ -23,14 +23,17 @@ export const EXPENSE_TYPES = [
 
 export type CommonExpenseType = (typeof EXPENSE_TYPES)[number];
 
+// Minimal expense type for helper functions
+type ExpenseForHelpers = Pick<Expense, "type" | "split_with">;
+
 // Helper to check if expense is fuel (for balance calculations)
-export function isFuelExpense(expense: Expense): boolean {
+export function isFuelExpense(expense: ExpenseForHelpers): boolean {
   return expense.type.toLowerCase() === "fuel";
 }
 
 // Helper to get split member IDs (defaults to all active members for fuel)
 export function getSplitMemberIds(
-  expense: Expense,
+  expense: ExpenseForHelpers,
   allActiveMemberIds: string[]
 ): string[] {
   if (isFuelExpense(expense)) {

@@ -5,12 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 import { TripInsert, TripUpdate } from "@/lib/types";
 
 // Input types using Pick to be explicit about what's required
-type AddTripInput = Pick<TripInsert, "car_id" | "name" | "distance_km" | "passenger_member_ids"> & {
+type AddTripInput = Pick<
+  TripInsert,
+  "car_id" | "name" | "distance" | "passengers"
+> & {
   date: Date; // Accept Date object, we'll convert to string
 };
 
 type UpdateTripInput = Partial<
-  Pick<TripUpdate, "name" | "distance_km" | "passenger_member_ids">
+  Pick<TripUpdate, "name" | "distance" | "passengers">
 > & {
   date?: Date; // Accept Date object, we'll convert to string
 };
@@ -24,8 +27,8 @@ export async function addTrip(data: AddTripInput) {
   const tripData: TripInsert = {
     car_id: data.car_id,
     name: data.name,
-    distance_km: data.distance_km,
-    passenger_member_ids: data.passenger_member_ids,
+    distance: data.distance,
+    passengers: data.passengers,
     date: data.date.toISOString().split("T")[0],
   };
 
@@ -42,17 +45,15 @@ export async function addTrip(data: AddTripInput) {
 /**
  * Update an existing trip
  */
-export async function updateTrip(
-  tripId: string,
-  data: UpdateTripInput
-) {
+export async function updateTrip(tripId: string, data: UpdateTripInput) {
   const supabase = await createClient();
 
   const updateData: TripUpdate = {};
   if (data.name !== undefined) updateData.name = data.name;
-  if (data.distance_km !== undefined) updateData.distance_km = data.distance_km;
-  if (data.passenger_member_ids !== undefined) updateData.passenger_member_ids = data.passenger_member_ids;
-  if (data.date !== undefined) updateData.date = data.date.toISOString().split("T")[0];
+  if (data.distance !== undefined) updateData.distance = data.distance;
+  if (data.passengers !== undefined) updateData.passengers = data.passengers;
+  if (data.date !== undefined)
+    updateData.date = data.date.toISOString().split("T")[0];
 
   const { error } = await supabase
     .from("trips")
@@ -73,10 +74,7 @@ export async function updateTrip(
 export async function deleteTrip(tripId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase
-    .from("trips")
-    .delete()
-    .eq("id", tripId);
+  const { error } = await supabase.from("trips").delete().eq("id", tripId);
 
   if (error) {
     throw new Error(`Failed to delete trip: ${error.message}`);
