@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
 import { getUserCar } from "@/lib/queries/cars";
-import { SettlementFromFunction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -32,7 +31,6 @@ import { DataTable } from "@/components/ui/data-table";
 import {
   createSettlementColumns,
   SettlementTableRow,
-  
 } from "@/components/settlements/columns";
 
 type Member = {
@@ -88,15 +86,13 @@ export default function SettlementsPage() {
         setMembers(allMembers || []);
 
         // Get settlements using function (bypasses RLS)
-        const { data: settlementsData, error: settlementsError } = await supabase.rpc(
-          "get_car_settlements",
-          { p_user_id: user.id }
-        );
+        const { data: settlementsData, error: settlementsError } =
+          await supabase.rpc("get_car_settlements", { p_user_id: user.id });
 
         if (settlementsError) throw settlementsError;
 
         // Transform settlements data using helper
-        const transformedSettlements = (settlementsData || []);
+        const transformedSettlements = settlementsData || [];
 
         setSettlements(transformedSettlements);
       } catch (error) {
@@ -141,7 +137,7 @@ export default function SettlementsPage() {
         { p_user_id: user.id }
       );
 
-      const transformedSettlements = (settlementsData || []);
+      const transformedSettlements = settlementsData || [];
 
       setSettlements(transformedSettlements);
       setDialogOpen(false);
@@ -339,7 +335,9 @@ export default function SettlementsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="amount">Amount ({car?.currency || "CAD"})</Label>
+                <Label htmlFor="amount">
+                  Amount ({car?.currency || "CAD"})
+                </Label>
                 <Input
                   id="amount"
                   type="number"
