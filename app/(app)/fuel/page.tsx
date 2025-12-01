@@ -8,8 +8,11 @@ import { getUserCar } from "@/lib/queries/cars";
 import { getCarMembers } from "@/lib/queries/members";
 import { getCarExpenses } from "@/lib/queries/expenses";
 import { addExpense, updateExpense, deleteExpense } from "@/lib/actions";
-import { groupMembersForSelect, MemberGroups } from "@/lib/services/member-sorter";
-import { CarFromFunction, ExpenseFromFunction } from "@/lib/types";
+import {
+  groupMembersForSelect,
+  MemberGroups,
+} from "@/lib/services/member-sorter";
+import { CarFromFunction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,14 +42,18 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { Plus, ChevronDownIcon } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
-import { createExpenseColumns, ExpenseTableRow } from "@/components/expenses/columns";
+import {
+  createExpenseColumns,
+  ExpenseTableRow,
+} from "@/components/expenses/columns";
 
 export default function ExpenseTableRowsPage() {
   const [fuelFills, setExpenseTableRows] = useState<ExpenseTableRow[]>([]);
   const [car, setCar] = useState<CarFromFunction | null>(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingExpenseTableRow, setEditingExpenseTableRow] = useState<ExpenseTableRow | null>(null);
+  const [editingExpenseTableRow, setEditingExpenseTableRow] =
+    useState<ExpenseTableRow | null>(null);
   const [fuelFillForm, setExpenseTableRowForm] = useState({
     payerMemberId: "",
     amount: "",
@@ -90,10 +97,9 @@ export default function ExpenseTableRowsPage() {
         setMemberGroups(groupMembersForSelect(members, user.id));
 
         // Filter only fuel expenses and transform for table using helper
-        const fuelExpenses = expenses
-          .filter((e) => e.type.toLowerCase() === "fuel")
-          ;
-
+        const fuelExpenses = expenses.filter(
+          (e) => e.type.toLowerCase() === "fuel"
+        );
         setExpenseTableRows(fuelExpenses);
       } catch (error) {
         console.error(error);
@@ -136,14 +142,17 @@ export default function ExpenseTableRowsPage() {
       // Reload data
       const supabase = createClient();
       const expenses = await getCarExpenses(supabase, user!.id);
-      const fuelExpenses = expenses
-        .filter((e) => e.type.toLowerCase() === "fuel")
-        ;
-
+      const fuelExpenses = expenses.filter(
+        (e) => e.type.toLowerCase() === "fuel"
+      );
       setExpenseTableRows(fuelExpenses);
       setDialogOpen(false);
       setEditingExpenseTableRow(null);
-      setExpenseTableRowForm({ payerMemberId: "", amount: "", date: new Date() });
+      setExpenseTableRowForm({
+        payerMemberId: "",
+        amount: "",
+        date: new Date(),
+      });
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -207,7 +216,11 @@ export default function ExpenseTableRowsPage() {
             setDialogOpen(open);
             if (!open) {
               setEditingExpenseTableRow(null);
-              setExpenseTableRowForm({ payerMemberId: "", amount: "", date: new Date() });
+              setExpenseTableRowForm({
+                payerMemberId: "",
+                amount: "",
+                date: new Date(),
+              });
             }
           }}
         >
@@ -231,7 +244,9 @@ export default function ExpenseTableRowsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingExpenseTableRow ? "Edit Fuel Fill" : "Add New Fuel Fill"}
+                {editingExpenseTableRow
+                  ? "Edit Fuel Fill"
+                  : "Add New Fuel Fill"}
               </DialogTitle>
               <DialogDescription>
                 {editingExpenseTableRow
@@ -245,7 +260,10 @@ export default function ExpenseTableRowsPage() {
                 <Select
                   value={fuelFillForm.payerMemberId}
                   onValueChange={(value) =>
-                    setExpenseTableRowForm({ ...fuelFillForm, payerMemberId: value })
+                    setExpenseTableRowForm({
+                      ...fuelFillForm,
+                      payerMemberId: value,
+                    })
                   }
                   required
                 >
@@ -285,7 +303,9 @@ export default function ExpenseTableRowsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="amount">Amount ({car?.currency || "CAD"})</Label>
+                <Label htmlFor="amount">
+                  Amount ({car?.currency || "CAD"})
+                </Label>
                 <Input
                   id="amount"
                   type="number"
@@ -315,7 +335,10 @@ export default function ExpenseTableRowsPage() {
                       <ChevronDownIcon className="h-4 w-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                  <PopoverContent
+                    className="w-auto overflow-hidden p-0"
+                    align="start"
+                  >
                     <Calendar
                       mode="single"
                       selected={fuelFillForm.date}

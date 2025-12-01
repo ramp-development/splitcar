@@ -13,7 +13,7 @@ import {
 } from "@/lib/queries";
 import { calculateMemberBalances } from "@/lib/services";
 import { sortMembersByPriority } from "@/lib/services/member-sorter";
-import { CarFromFunction, MemberFromFunction } from "@/lib/types";
+import { CarFromFunction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
@@ -60,13 +60,15 @@ export default function BalancesPage() {
         );
 
         // Transform to Balance type for table using helper
-        const balancesForTable: BalanceTableRow[] = memberBalances.map((mb) => ({
-          ...mb,
-          member_id: mb.member.id,
-          member_name: mb.member.name,
-          member_role: mb.member.role,
-          member_user_id: mb.member.user_id,
-        }));
+        const balancesForTable: BalanceTableRow[] = memberBalances.map(
+          (mb) => ({
+            ...mb,
+            member_id: mb.member.id,
+            member_name: mb.member.name,
+            member_role: mb.member.role,
+            member_user_id: mb.member.user_id,
+          })
+        );
 
         // Sort using service
         const sortedMembers = sortMembersByPriority(activeMembers, user.id);
