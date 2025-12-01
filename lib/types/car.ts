@@ -5,14 +5,24 @@ export type Car = Database["public"]["Tables"]["cars"]["Row"];
 export type CarInsert = Database["public"]["Tables"]["cars"]["Insert"];
 export type CarUpdate = Database["public"]["Tables"]["cars"]["Update"];
 
+// Type from database function
+export type CarFromFunction =
+  Database["public"]["Functions"]["get_user_car"]["Returns"][number];
+
 // Extended types with computed properties
 export type CarWithMetrics = Car & {
   costPerKm: number;
 };
 
-// Helper functions
+/**
+ * Calculate cost per km based on fuel efficiency and price
+ * All calculations use metric (km, litres)
+ */
 export function calculateCostPerKm(car: Car): number {
-  return car.avg_price_per_litre / car.efficiency_km_per_litre;
+  if (!car.km_per_litre || !car.default_price_per_litre) {
+    return 0;
+  }
+  return car.default_price_per_litre / car.km_per_litre;
 }
 
 export function getCarWithMetrics(car: Car): CarWithMetrics {

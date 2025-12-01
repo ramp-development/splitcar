@@ -16,84 +16,82 @@ export type Database = {
     Tables: {
       cars: {
         Row: {
-          avg_price_per_litre: number
           created_at: string | null
           currency: string | null
+          default_price_per_litre: number | null
           distance_unit: string | null
-          efficiency_km_per_litre: number
           fuel_unit: string | null
           id: string
+          km_per_litre: number | null
           name: string
-          owner_id: string | null
         }
         Insert: {
-          avg_price_per_litre: number
           created_at?: string | null
           currency?: string | null
+          default_price_per_litre?: number | null
           distance_unit?: string | null
-          efficiency_km_per_litre: number
           fuel_unit?: string | null
           id?: string
+          km_per_litre?: number | null
           name: string
-          owner_id?: string | null
         }
         Update: {
-          avg_price_per_litre?: number
           created_at?: string | null
           currency?: string | null
+          default_price_per_litre?: number | null
           distance_unit?: string | null
-          efficiency_km_per_litre?: number
           fuel_unit?: string | null
           id?: string
+          km_per_litre?: number | null
           name?: string
-          owner_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "cars_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      fuel_fills: {
+      expenses: {
         Row: {
           amount: number
           car_id: string
           created_at: string | null
           date: string
+          description: string | null
           id: string
-          payer_member_id: string
+          payer_id: string
+          split_with: string[] | null
+          type: string
         }
         Insert: {
           amount: number
           car_id: string
           created_at?: string | null
           date?: string
+          description?: string | null
           id?: string
-          payer_member_id: string
+          payer_id: string
+          split_with?: string[] | null
+          type: string
         }
         Update: {
           amount?: number
           car_id?: string
           created_at?: string | null
           date?: string
+          description?: string | null
           id?: string
-          payer_member_id?: string
+          payer_id?: string
+          split_with?: string[] | null
+          type?: string
         }
         Relationships: [
           {
-            foreignKeyName: "fuel_fills_car_id_fkey"
+            foreignKeyName: "expenses_car_id_fkey"
             columns: ["car_id"]
             isOneToOne: false
             referencedRelation: "cars"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fuel_fills_payer_member_id_fkey"
-            columns: ["payer_member_id"]
+            foreignKeyName: "expenses_payer_id_fkey"
+            columns: ["payer_id"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
@@ -103,32 +101,41 @@ export type Database = {
       members: {
         Row: {
           archived: boolean | null
+          archived_at: string | null
           car_id: string
           created_at: string | null
           id: string
-          is_guest: boolean | null
-          name: string
-          phone: string | null
+          invite_code: string
+          invited_at: string | null
+          is_admin: boolean | null
+          joined_at: string | null
+          role: Database["public"]["Enums"]["member_role"]
           user_id: string | null
         }
         Insert: {
           archived?: boolean | null
+          archived_at?: string | null
           car_id: string
           created_at?: string | null
           id?: string
-          is_guest?: boolean | null
-          name: string
-          phone?: string | null
+          invite_code: string
+          invited_at?: string | null
+          is_admin?: boolean | null
+          joined_at?: string | null
+          role?: Database["public"]["Enums"]["member_role"]
           user_id?: string | null
         }
         Update: {
           archived?: boolean | null
+          archived_at?: string | null
           car_id?: string
           created_at?: string | null
           id?: string
-          is_guest?: boolean | null
-          name?: string
-          phone?: string | null
+          invite_code?: string
+          invited_at?: string | null
+          is_admin?: boolean | null
+          joined_at?: string | null
+          role?: Database["public"]["Enums"]["member_role"]
           user_id?: string | null
         }
         Relationships: [
@@ -153,25 +160,31 @@ export type Database = {
           amount: number
           car_id: string
           created_at: string | null
-          from_member_id: string
+          from_id: string
           id: string
-          to_member_id: string
+          settled_at: string | null
+          status: Database["public"]["Enums"]["settlement_status"] | null
+          to_id: string
         }
         Insert: {
           amount: number
           car_id: string
           created_at?: string | null
-          from_member_id: string
+          from_id: string
           id?: string
-          to_member_id: string
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["settlement_status"] | null
+          to_id: string
         }
         Update: {
           amount?: number
           car_id?: string
           created_at?: string | null
-          from_member_id?: string
+          from_id?: string
           id?: string
-          to_member_id?: string
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["settlement_status"] | null
+          to_id?: string
         }
         Relationships: [
           {
@@ -182,15 +195,15 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "settlements_from_member_id_fkey"
-            columns: ["from_member_id"]
+            foreignKeyName: "settlements_from_id_fkey"
+            columns: ["from_id"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "settlements_to_member_id_fkey"
-            columns: ["to_member_id"]
+            foreignKeyName: "settlements_to_id_fkey"
+            columns: ["to_id"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
@@ -202,28 +215,28 @@ export type Database = {
           car_id: string
           created_at: string | null
           date: string
-          distance_km: number
+          distance: number
           id: string
           name: string | null
-          passenger_member_ids: string[]
+          passengers: string[]
         }
         Insert: {
           car_id: string
           created_at?: string | null
           date?: string
-          distance_km: number
+          distance: number
           id?: string
           name?: string | null
-          passenger_member_ids: string[]
+          passengers: string[]
         }
         Update: {
           car_id?: string
           created_at?: string | null
           date?: string
-          distance_km?: number
+          distance?: number
           id?: string
           name?: string | null
-          passenger_member_ids?: string[]
+          passengers?: string[]
         }
         Relationships: [
           {
@@ -240,19 +253,16 @@ export type Database = {
           created_at: string | null
           id: string
           name: string | null
-          phone: string
         }
         Insert: {
           created_at?: string | null
-          id?: string
+          id: string
           name?: string | null
-          phone: string
         }
         Update: {
           created_at?: string | null
           id?: string
           name?: string | null
-          phone?: string
         }
         Relationships: []
       }
@@ -261,20 +271,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invite: {
+        Args: { p_invite_code: string; p_user_id: string }
+        Returns: string
+      }
       auto_link_member_by_phone: {
         Args: { p_phone: string; p_user_id: string }
         Returns: boolean
       }
-      get_car_fuel_fills: {
+      generate_invite_code: { Args: never; Returns: string }
+      get_car_expenses: {
         Args: { p_user_id: string }
         Returns: {
           amount: number
           car_id: string
           created_at: string
           date: string
+          description: string
           id: string
-          payer_member_id: string
+          payer_id: string
           payer_name: string
+          split_with: string[]
+          type: string
         }[]
       }
       get_car_members: {
@@ -282,11 +300,13 @@ export type Database = {
         Returns: {
           archived: boolean
           car_id: string
-          created_at: string
           id: string
-          is_guest: boolean
+          invite_code: string
+          invited_at: string
+          is_admin: boolean
+          joined_at: string
           name: string
-          phone: string
+          role: Database["public"]["Enums"]["member_role"]
           user_id: string
         }[]
       }
@@ -296,11 +316,13 @@ export type Database = {
           amount: number
           car_id: string
           created_at: string
-          from_member_id: string
-          from_member_name: string
+          from_id: string
+          from_name: string
           id: string
-          to_member_id: string
-          to_member_name: string
+          settled_at: string
+          status: Database["public"]["Enums"]["settlement_status"]
+          to_id: string
+          to_name: string
         }[]
       }
       get_car_trips: {
@@ -309,29 +331,29 @@ export type Database = {
           car_id: string
           created_at: string
           date: string
-          distance_km: number
+          distance: number
           id: string
           name: string
-          passenger_member_ids: string[]
+          passengers: string[]
         }[]
       }
       get_user_car: {
         Args: { p_user_id: string }
         Returns: {
-          avg_price_per_litre: number
           created_at: string
           currency: string
+          default_price_per_litre: number
           distance_unit: string
-          efficiency_km_per_litre: number
           fuel_unit: string
           id: string
+          km_per_litre: number
           name: string
-          owner_id: string
         }[]
       }
     }
     Enums: {
-      [_ in never]: never
+      member_role: "owner" | "guest"
+      settlement_status: "pending" | "settled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -458,6 +480,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      member_role: ["owner", "guest"],
+      settlement_status: ["pending", "settled"],
+    },
   },
 } as const

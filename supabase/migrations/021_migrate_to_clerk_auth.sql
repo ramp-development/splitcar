@@ -6,26 +6,63 @@
 -- 3. Updates cars.owner_id to text to match
 -- 4. Keeps all existing data (we'll migrate user IDs manually or via script)
 
+-- Step 0: Drop ALL policies that might reference the columns we're changing
+-- This is necessary because we can't alter column types if policies reference them
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  -- Drop all policies on users table
+  FOR r IN SELECT policyname FROM pg_policies WHERE tablename = 'users' LOOP
+    EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON users';
+  END LOOP;
+
+  -- Drop all policies on cars table
+  FOR r IN SELECT policyname FROM pg_policies WHERE tablename = 'cars' LOOP
+    EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON cars';
+  END LOOP;
+
+  -- Drop all policies on members table
+  FOR r IN SELECT policyname FROM pg_policies WHERE tablename = 'members' LOOP
+    EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON members';
+  END LOOP;
+
+  -- Drop all policies on fuel_fills table
+  FOR r IN SELECT policyname FROM pg_policies WHERE tablename = 'fuel_fills' LOOP
+    EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON fuel_fills';
+  END LOOP;
+
+  -- Drop all policies on trips table
+  FOR r IN SELECT policyname FROM pg_policies WHERE tablename = 'trips' LOOP
+    EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON trips';
+  END LOOP;
+
+  -- Drop all policies on settlements table
+  FOR r IN SELECT policyname FROM pg_policies WHERE tablename = 'settlements' LOOP
+    EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON settlements';
+  END LOOP;
+END $$;
+
+-- Disable RLS on all tables
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE cars DISABLE ROW LEVEL SECURITY;
+ALTER TABLE members DISABLE ROW LEVEL SECURITY;
+ALTER TABLE fuel_fills DISABLE ROW LEVEL SECURITY;
+ALTER TABLE trips DISABLE ROW LEVEL SECURITY;
+ALTER TABLE settlements DISABLE ROW LEVEL SECURITY;
+
 -- Step 1: Drop foreign key constraints that reference users.id
 ALTER TABLE members DROP CONSTRAINT IF EXISTS members_user_id_fkey;
 ALTER TABLE cars DROP CONSTRAINT IF EXISTS cars_owner_id_fkey;
 
 -- Step 2: Change users table primary key type
--- We need to drop and recreate the column since we can't alter PK type directly
--- First, backup any data (there might be test users)
-CREATE TEMPORARY TABLE users_backup AS SELECT * FROM users;
-
--- Drop and recreate users table with text ID
+-- Database has been cleared, so we can simply drop and recreate
 DROP TABLE users CASCADE;
 
 CREATE TABLE users (
   id text PRIMARY KEY,              -- Clerk user ID (e.g., user_2abc123)
   created_at timestamp with time zone DEFAULT now()
 );
-
--- Restore any data (though we'll likely have none or need to re-create with Clerk IDs)
--- INSERT INTO users (id, created_at)
--- SELECT id::text, created_at FROM users_backup;
 
 -- Step 3: Update members.user_id to text
 ALTER TABLE members ALTER COLUMN user_id TYPE text USING user_id::text;
