@@ -37,7 +37,6 @@ Build a minimal, functional MVP of SplitCar: a shared-car cost tracking app used
 ### Layout & Spacing
 
 - **Container**: All app pages use `(app)/layout.tsx` which provides navbar, breadcrumbs, and max-width container
-- **Page styling**: Only add `<div className="mx-auto max-w-6xl">` for content, no need for padding (handled by layout)
 - **No nested cards**: Avoid cards within cards - use simple headings and content directly
 - **Mobile-first**: Stack elements vertically on mobile, side-by-side on desktop using `flex-col sm:flex-row`
 

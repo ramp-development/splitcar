@@ -1,0 +1,513 @@
+# SplitCar V2 - Refactoring & Improvements Plan
+
+## Current Status
+
+MVP is complete and deployed. This document outlines the next phase: improving architecture, developer experience, and user onboarding flow.
+
+## Major Improvements
+
+### 1. Authentication Migration: Supabase → Clerk
+
+**Problem:**
+- Supabase phone auth requires paid Twilio integration
+- Current phone-only flow is limiting
+- OTP costs add up for non-commercial project
+
+**Solution: Migrate to Clerk**
+
+Clerk provides:
+- Free tier with phone, email, and social auth
+- Built-in user management UI
+- Better developer experience
+- No Twilio setup required
+- Multi-factor authentication support
+
+**Implementation Plan:**
+
+1. **Setup & Configuration**
+   - Install Clerk SDK: `@clerk/nextjs`
+   - Configure environment variables (Clerk publishable/secret keys)
+   - Set up Clerk middleware to replace Supabase auth middleware
+   - Configure sign-in options (email, phone, Google, etc.)
+
+2. **User Table Migration**
+   - Simplify `users` table - Clerk is source of truth for user data
+   - Update to use Clerk user IDs instead of Supabase auth IDs
+   - Schema changes:
+     ```sql
+     users (
+       id text primary key,          -- Clerk user ID (user_xxx)
+       created_at timestamp default now()
+     )
+     ```
+   - That's it! Email, phone, name all stored in Clerk, not duplicated
+
+3. **Auth Context Replacement**
+   - Replace `lib/auth/context.tsx` with Clerk's `useUser()` and `useAuth()`
+   - Update all components using auth context
+   - Remove Supabase auth-specific code
+
+4. **Page Updates**
+   - Remove: `(auth)/login`, `(auth)/verify` pages
+   - Keep: `(auth)/onboarding` page (for name collection)
+   - Use Clerk's `<SignIn />` and `<SignUp />` components
+   - Add Clerk's `<UserButton />` to navbar
+
+5. **Database Integration**
+   - Update RLS policies to work with Clerk user IDs (text instead of uuid)
+   - Keep all existing `get_user_*` functions
+   - Member linking uses `user_id` directly (no email/phone matching needed)
+
+6. **Migration Steps**
+   - [ ] Install Clerk and configure
+   - [ ] Create new auth pages with Clerk components
+   - [ ] Update middleware and auth utilities
+   - [ ] Migrate user table schema
+   - [ ] Update all auth context usage
+   - [ ] Update RLS policies
+   - [ ] Test authentication flow
+   - [ ] Deploy and migrate existing users
+
+**Benefits:**
+- Multiple sign-in options (email, phone, social)
+- Better UX with Clerk's pre-built components
+- No Twilio costs
+- Easier to maintain
+
+---
+
+### 2. Improved Invite Flow: One Invite Code Per Member
+
+**Problem:**
+- Current flow requires knowing member's phone number
+- Phone numbers can be sensitive/private
+- Hard to invite someone not in your contacts
+- Ambiguity with email/phone matching
+
+**New Solution: 1:1 Member Invite Links**
+
+Each member gets their own unique invite code. Simple, predictable, no ambiguity.
+
+**User Flow:**
+
+1. **Car Owner Adds Member**
+   - Add member with just a name (no email/phone required)
+   - Member created with `user_id = NULL` (not linked yet)
+   - Click "Invite" button → generates unique code for that member
+   - Share link: `https://splitcar.app/join/abc123xyz`
+
+2. **Invitee Joins**
+   - Click invite link (unauthenticated)
+   - Shown: "Greg invited you to join Tesla Model 3"
+   - Sign in or sign up with Clerk
+   - After auth, `user_id` automatically linked to that member
+   - Redirected to car dashboard
+
+**Database Schema Changes:**
+
+```sql
+-- Update members table to include invite code
+members (
+  id uuid primary key,
+  car_id uuid references cars(id),
+  name text not null,
+  user_id text references users(id),      -- NULL until they join
+  invite_code text unique,                 -- Generated when owner clicks "Invite"
+  invited_at timestamp,                    -- When invite was created
+  joined_at timestamp,                     -- When user_id was linked
+  is_guest boolean default false,
+  archived boolean default false,
+  created_at timestamp default now()
+);
+```
+
+No separate `car_invites` table needed - simpler!
+
+**Implementation:**
+
+1. **Members Page Updates**
+   - Add "Invite" button next to each member (only if `user_id IS NULL`)
+   - Generates invite code if not exists
+   - Copy/share invite link via Web Share API
+   - Show status: "Pending" (not joined), "Joined" (has user_id)
+
+2. **Join Page** (`/join/[inviteCode]`)
+   - Public route (no auth required)
+   - Look up member by invite_code
+   - Show car name and inviter info
+   - Redirect to Clerk sign-in/sign-up
+   - After auth, link Clerk user ID to member
+
+3. **Member Linking Logic**
+   - Server action: `linkMemberToUser(inviteCode, clerkUserId)`
+   - Validate invite code exists and not already linked
+   - Update: `SET user_id = clerkUserId, joined_at = NOW()`
+   - Redirect to dashboard
+
+**Benefits:**
+- ✅ No ambiguity (one code = one specific member)
+- ✅ No email/phone matching issues
+- ✅ Simpler schema (no extra tables)
+- ✅ Owner can see who hasn't joined yet
+- ✅ Can regenerate codes if needed
+- ✅ Easy to revoke (archive the member)
+
+**Edge Cases:**
+- If member already has `user_id`, don't show "Invite" button
+- Can regenerate invite code if user lost it
+- Archived members can't be invited (must unarchive first)
+
+---
+
+### 3. Database Type Safety & Organization
+
+**Problem:**
+- Types are defined ad-hoc in component files
+- No single source of truth for database schema
+- Hard to keep types in sync with database
+- Risk of type mismatches
+
+**Solution: Centralized Type System**
+
+**Approach: Supabase Type Generation**
+
+Supabase can auto-generate TypeScript types from your database schema.
+
+**Setup:**
+
+```bash
+# Install Supabase CLI
+npm install --save-dev supabase
+
+# Generate types from database
+npx supabase gen types typescript --project-id [PROJECT_ID] > lib/database.types.ts
+```
+
+**File Structure:**
+
+```
+lib/
+├── database.types.ts         # Auto-generated from Supabase
+├── types/
+│   ├── index.ts              # Re-export all types
+│   ├── car.ts                # Car-related types & helpers
+│   ├── member.ts             # Member-related types & helpers
+│   ├── trip.ts               # Trip-related types & helpers
+│   ├── fuel-fill.ts          # Fuel fill types & helpers
+│   └── settlement.ts         # Settlement types & helpers
+```
+
+**Example `lib/types/car.ts`:**
+
+```typescript
+import { Database } from '@/lib/database.types';
+
+// Base types from database
+export type Car = Database['public']['Tables']['cars']['Row'];
+export type CarInsert = Database['public']['Tables']['cars']['Insert'];
+export type CarUpdate = Database['public']['Tables']['cars']['Update'];
+
+// Extended types with computed properties
+export type CarWithMetrics = Car & {
+  costPerKm: number;
+  memberCount: number;
+  totalFuelSpend: number;
+};
+
+// Helper functions
+export function calculateCostPerKm(car: Car): number {
+  return car.avg_price_per_litre / car.efficiency_km_per_litre;
+}
+```
+
+**Benefits:**
+- Type safety across entire app
+- Auto-complete for database columns
+- Catch schema mismatches at compile time
+- Single source of truth
+- Easy to update when schema changes
+
+**Implementation Steps:**
+1. Set up Supabase CLI and type generation script
+2. Generate initial types
+3. Create type helper files
+4. Update all components to use new types
+5. Add npm script: `"types:generate": "supabase gen types typescript..."`
+6. Document type generation in README
+
+---
+
+### 4. Code Refactoring & Organization
+
+**Problem:**
+- Database queries scattered across page components
+- Business logic mixed with UI code
+- Hard to test and maintain
+- Duplicate query patterns
+
+**Solution: Clean Architecture with Separation of Concerns**
+
+**New Structure:**
+
+```
+lib/
+├── types/                    # Type definitions (as above)
+├── queries/                  # Database query functions
+│   ├── cars.ts
+│   ├── members.ts
+│   ├── fuel-fills.ts
+│   ├── trips.ts
+│   ├── settlements.ts
+│   └── balances.ts
+├── actions/                  # Server actions for mutations
+│   ├── car-actions.ts
+│   ├── member-actions.ts
+│   ├── fuel-fill-actions.ts
+│   ├── trip-actions.ts
+│   └── settlement-actions.ts
+├── services/                 # Business logic & calculations
+│   ├── balance-calculator.ts
+│   ├── cost-calculator.ts
+│   └── member-sorter.ts
+├── utils/                    # Utility functions
+│   ├── date-formatter.ts
+│   ├── currency-formatter.ts
+│   └── phone-normalizer.ts
+└── hooks/                    # Custom React hooks
+    ├── use-car.ts
+    ├── use-members.ts
+    └── use-balances.ts
+```
+
+**Example Refactoring:**
+
+**Before** (in page component):
+```typescript
+// app/(app)/members/page.tsx
+const { data: members } = await supabase
+  .from('members')
+  .select('*')
+  .eq('car_id', carId)
+  .order('name');
+```
+
+**After:**
+```typescript
+// lib/queries/members.ts
+export async function getCarMembers(supabase: SupabaseClient, carId: string) {
+  const { data, error } = await supabase.rpc('get_car_members', {
+    p_car_id: carId
+  });
+
+  if (error) throw new Error(`Failed to fetch members: ${error.message}`);
+  return data as Member[];
+}
+
+// lib/services/member-sorter.ts
+export function sortMembersByPriority(members: Member[], currentUserId: string) {
+  // Sort logic: current user first, then members, then guests
+  return members.sort((a, b) => {
+    if (a.user_id === currentUserId) return -1;
+    if (b.user_id === currentUserId) return 1;
+    if (a.is_guest !== b.is_guest) return a.is_guest ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+// lib/hooks/use-members.ts
+export function useMembers(carId: string) {
+  const { user } = useAuth();
+  const supabase = createClient();
+
+  const { data: members, isLoading } = useSWR(
+    ['members', carId],
+    () => getCarMembers(supabase, carId)
+  );
+
+  const sortedMembers = members
+    ? sortMembersByPriority(members, user.id)
+    : [];
+
+  return { members: sortedMembers, isLoading };
+}
+
+// app/(app)/members/page.tsx - Now much cleaner!
+export default function MembersPage() {
+  const { members, isLoading } = useMembers(carId);
+  return <DataTable data={members} columns={columns} />;
+}
+```
+
+**Benefits:**
+- Easier to test (pure functions)
+- Reusable query logic
+- Cleaner page components
+- Better error handling
+- Easier to optimize (caching, etc.)
+
+**Migration Strategy:**
+1. Create new directory structure
+2. Move query logic to `lib/queries/`
+3. Extract business logic to `lib/services/`
+4. Create custom hooks for common patterns
+5. Update page components to use new structure
+6. Add tests for business logic
+
+---
+
+### 5. RLS Policy Audit & Cleanup
+
+**Problem:**
+- Multiple migrations creating/updating policies
+- Some policies may conflict or be redundant
+- Hard to understand current security posture
+- No clear documentation of access rules
+
+**Solution: Comprehensive RLS Audit & Reorganization**
+
+**Current State Analysis:**
+
+Review all existing policies across tables:
+- `cars` - Owner and member access
+- `members` - Owner, member self-read, and linked member access
+- `fuel_fills` - Car access via owner/member
+- `trips` - Car access via owner/member
+- `settlements` - Car access via owner/member
+
+**Action Items:**
+
+1. **Audit Current Policies**
+   - [ ] List all active RLS policies per table
+   - [ ] Identify redundant or conflicting policies
+   - [ ] Document intended access patterns
+   - [ ] Check for security gaps
+
+2. **Create Clean RLS Migration**
+   - [ ] Create comprehensive RLS documentation
+   - [ ] Write new migration that:
+     - Drops all existing policies
+     - Creates clean, well-named policies
+     - Uses consistent naming convention
+   - [ ] Policy naming: `[table]_[action]_[subject]`
+     - Example: `cars_select_owner`, `cars_select_member`
+
+3. **RLS Policy Principles**
+   - **Cars**: Owner full access, members read-only
+   - **Members**: Owner full access, members can read all, users can update their linked member
+   - **Fuel Fills**: Owner full access, members full access (for their car)
+   - **Trips**: Owner full access, members full access (for their car)
+   - **Settlements**: Owner full access, members full access (for their car)
+   - **Car Invites**: Owner full access, public read for active invites
+
+4. **Testing**
+   - [ ] Create test users (owner, member, guest)
+   - [ ] Verify each policy works as expected
+   - [ ] Test edge cases (archived members, multiple cars, etc.)
+
+**New RLS Structure:**
+
+```sql
+-- Example clean policy structure
+-- Enable RLS
+ALTER TABLE cars ENABLE ROW LEVEL SECURITY;
+
+-- Cars: Owner can do everything
+CREATE POLICY cars_all_owner ON cars
+  FOR ALL
+  TO authenticated
+  USING (owner_id = auth.uid());
+
+-- Cars: Members can read their car
+CREATE POLICY cars_select_member ON cars
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM members
+      WHERE members.car_id = cars.id
+      AND members.user_id = auth.uid()
+    )
+  );
+```
+
+**Documentation:**
+
+Create `docs/DATABASE_SECURITY.md`:
+- Overview of RLS approach
+- Table-by-table policy explanation
+- Access matrix (who can do what)
+- Testing procedures
+
+---
+
+## Implementation Priority
+
+### Phase 1: Foundation (Critical)
+1. **Database Types** - Establish type safety first
+2. **Code Refactoring** - Clean architecture for easier changes
+3. **RLS Audit** - Ensure security before adding features
+
+### Phase 2: User Experience (High Priority)
+4. **Clerk Migration** - Better auth experience
+5. **Invite System** - Improved onboarding
+
+### Phase 3: Polish (Medium Priority)
+- Error handling improvements
+- Loading states
+- Mobile optimization
+- Performance tuning
+
+## Success Metrics
+
+**Before Refactoring:**
+- ~10 migration files with overlapping policies
+- Types defined in 5+ different files
+- Database queries in page components
+- Auth tied to Supabase
+
+**After Refactoring:**
+- Single source of truth for types
+- Clean RLS with <10 policies per table
+- Separated concerns (queries, actions, services)
+- Flexible auth with Clerk
+- Easy invite sharing
+
+## Migration Checklist
+
+- [ ] Set up type generation workflow
+- [ ] Create new directory structure
+- [ ] Audit and document current RLS policies
+- [ ] Refactor queries and business logic
+- [ ] Implement invite system
+- [ ] Set up Clerk authentication
+- [ ] Migrate existing users
+- [ ] Update all components to use new structure
+- [ ] Write tests for critical business logic
+- [ ] Update documentation
+- [ ] Deploy to staging
+- [ ] Test thoroughly
+- [ ] Deploy to production
+
+## Notes
+
+- Keep MVP running while refactoring
+- Make changes incrementally
+- Test each phase before moving to next
+- Document breaking changes
+- Consider feature flags for gradual rollout
+
+---
+
+## Decisions Made
+
+1. **Clerk Auth**: ✅ Email + phone (configured in Clerk dashboard)
+2. **Invite System**: ✅ 1:1 member invites (one code per member)
+3. **User Table**: ✅ Minimal - just store Clerk user ID, nothing else
+4. **Member Linking**: ✅ Direct via Clerk user ID (no email/phone matching)
+5. **Branch Strategy**: ✅ Work in `feature/v2-refactor` branch
+
+## Open Questions
+
+1. **Type Generation**: Manual or automated (CI/CD hook)?
+2. **Testing**: Unit tests, integration tests, or E2E tests first?
+3. **Deployment**: Blue-green deployment or feature flags for migration?
