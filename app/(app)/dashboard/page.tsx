@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/client";
-import { getUserCar } from "@/lib/queries/car";
+import { getUserCar } from "@/lib/queries/cars";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

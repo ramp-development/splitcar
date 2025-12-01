@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
-import { getUserCar } from "@/lib/queries/car";
+import { getUserCar } from "@/lib/queries/cars";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,7 +76,11 @@ export default function TripsPage() {
           return;
         }
 
-        setCar(carData);
+        setCar({
+          ...carData,
+          currency: carData.currency || "CAD",
+          distance_unit: carData.distance_unit || "km",
+        });
 
         // Get members using function (bypasses RLS)
         const { data: allMembers, error: membersError } = await supabase.rpc(

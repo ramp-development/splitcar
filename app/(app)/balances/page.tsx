@@ -4,36 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
-import { getUserCar } from "@/lib/queries/car";
+import { getUserCar } from "@/lib/queries/cars";
+import { getCarMembers, getCarFuelFills, getCarTrips, getCarSettlements } from "@/lib/queries";
+import { calculateMemberBalances } from "@/lib/services";
+import { sortMembersByPriority } from "@/lib/services/member-sorter";
+import { Car, Member } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { createBalanceColumns, Balance } from "@/components/balances/columns";
-import { Member } from "@/components/members/columns";
-
-type Car = {
-  id: string;
-  currency: string;
-  efficiency_km_per_litre: number;
-  avg_price_per_litre: number;
-};
-
-type FuelFill = {
-  payer_member_id: string;
-  amount: number;
-};
-
-type Trip = {
-  distance_km: number;
-  passenger_member_ids: string[];
-};
-
-type Settlement = {
-  from_member_id: string;
-  to_member_id: string;
-  amount: number;
-};
 
 export default function BalancesPage() {
   const [balances, setBalances] = useState<Balance[]>([]);
@@ -58,114 +38,52 @@ export default function BalancesPage() {
 
         setCar(carData);
 
-        // Get members using function (bypasses RLS)
-        const { data: allMembers, error: membersError } = await supabase.rpc(
-          "get_car_members",
-          { p_user_id: user.id }
+        // Get all data using query functions
+        const members = await getCarMembers(supabase, user.id);
+        const activeMembers = members.filter((m) => !m.archived);
+        const fuelFills = await getCarFuelFills(supabase, user.id);
+        const trips = await getCarTrips(supabase, user.id);
+        const settlements = await getCarSettlements(supabase, user.id);
+
+        // Calculate balances using service
+        const memberBalances = calculateMemberBalances(
+          activeMembers,
+          fuelFills,
+          trips,
+          settlements,
+          carData
         );
 
-        if (membersError) throw membersError;
-        const membersData = (allMembers || []).filter(
-          (m: Member) => !m.archived
+        // Transform to Balance type for table and sort
+        const balancesForTable: Balance[] = memberBalances.map((mb) => ({
+          member_id: mb.member.id,
+          member_name: mb.member.name,
+          fuel_paid: mb.fuelPaid,
+          trip_usage: mb.tripUsage,
+          settlements_received: mb.settlementsReceived,
+          settlements_sent: mb.settlementsSent,
+          net_balance: mb.netBalance,
+          is_guest: mb.member.is_guest || false,
+          user_id: mb.member.user_id,
+        }));
+
+        // Sort using service
+        const sortedBalances = sortMembersByPriority(
+          balancesForTable.map((b) => ({
+            id: b.member_id,
+            name: b.member_name,
+            is_guest: b.is_guest,
+            user_id: b.user_id,
+          } as Member)),
+          user.id
         );
 
-        // Get fuel fills using function (bypasses RLS)
-        const { data: fuelFillsData, error: fuelFillsError } =
-          await supabase.rpc("get_car_fuel_fills", { p_user_id: user.id });
-
-        if (fuelFillsError) throw fuelFillsError;
-
-        // Get trips using function (bypasses RLS)
-        const { data: tripsData, error: tripsError } = await supabase.rpc(
-          "get_car_trips",
-          { p_user_id: user.id }
+        // Re-map to Balance[] in sorted order
+        const finalBalances = sortedBalances.map((member) =>
+          balancesForTable.find((b) => b.member_id === member.id)!
         );
 
-        if (tripsError) throw tripsError;
-
-        // Get settlements using function (bypasses RLS)
-        const { data: settlementsData, error: settlementsError } =
-          await supabase.rpc("get_car_settlements", { p_user_id: user.id });
-
-        if (settlementsError) throw settlementsError;
-
-        // Calculate balances
-        const costPerKm =
-          carData.avg_price_per_litre / carData.efficiency_km_per_litre;
-
-        const calculatedBalances = (membersData || []).map((member: Member) => {
-          // Calculate fuel paid
-          const fuelPaid = (fuelFillsData || [])
-            .filter((fill: FuelFill) => fill.payer_member_id === member.id)
-            .reduce((sum: number, fill: FuelFill) => sum + fill.amount, 0);
-
-          // Calculate trip usage
-          const tripUsage = (tripsData || [])
-            .filter((trip: Trip) =>
-              trip.passenger_member_ids.includes(member.id)
-            )
-            .reduce((sum: number, trip: Trip) => {
-              const tripCost = trip.distance_km * costPerKm;
-              const costPerPassenger =
-                tripCost / trip.passenger_member_ids.length;
-              return sum + costPerPassenger;
-            }, 0);
-
-          // Calculate settlements received
-          const settlementsReceived = (settlementsData || [])
-            .filter(
-              (settlement: Settlement) => settlement.to_member_id === member.id
-            )
-            .reduce(
-              (sum: number, settlement: Settlement) => sum + settlement.amount,
-              0
-            );
-
-          // Calculate settlements sent
-          const settlementsSent = (settlementsData || [])
-            .filter(
-              (settlement: Settlement) =>
-                settlement.from_member_id === member.id
-            )
-            .reduce(
-              (sum: number, settlement: Settlement) => sum + settlement.amount,
-              0
-            );
-
-          // Calculate net balance
-          const netBalance =
-            fuelPaid - tripUsage + settlementsReceived - settlementsSent;
-
-          return {
-            member_id: member.id,
-            member_name: member.name,
-            fuel_paid: fuelPaid,
-            trip_usage: tripUsage,
-            settlements_received: settlementsReceived,
-            settlements_sent: settlementsSent,
-            net_balance: netBalance,
-            is_guest: member.is_guest,
-            user_id: member.user_id,
-          };
-        });
-
-        // Sort balances: current user first, then non-guests alphabetically, then guests alphabetically
-        const sortedBalances = calculatedBalances.sort(
-          (a: Balance, b: Balance) => {
-            // Current user first
-            if (a.user_id === user.id) return -1;
-            if (b.user_id === user.id) return 1;
-
-            // Then members before guests
-            if (!a.is_guest && b.is_guest) return -1;
-            if (a.is_guest && !b.is_guest) return 1;
-
-            // Within same group, sort alphabetically
-            return a.member_name.localeCompare(b.member_name);
-          }
-        );
-
-        setBalances(sortedBalances);
+        setBalances(finalBalances);
       } catch (error) {
         console.error(error);
         toast.error("Failed to load balances");

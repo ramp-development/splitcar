@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
-import { getUserCar } from "@/lib/queries/car";
+import { getUserCar } from "@/lib/queries/cars";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -74,7 +74,7 @@ export default function SettlementsPage() {
           return;
         }
 
-        setCar({ id: carData.id, currency: carData.currency });
+        setCar({ id: carData.id, currency: carData.currency || "CAD" });
 
         // Get members using function (bypasses RLS)
         const { data: allMembers, error: membersError } = await supabase.rpc(
