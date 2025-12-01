@@ -7,13 +7,13 @@ import { useAuth } from "@/lib/auth/context";
 import { getUserCar } from "@/lib/queries/cars";
 import {
   getActiveMembers,
-  getCarFuelFills,
+  getCarExpenses,
   getCarTrips,
   getCarSettlements,
 } from "@/lib/queries";
 import { calculateMemberBalances } from "@/lib/services";
 import { sortMembersByPriority } from "@/lib/services/member-sorter";
-import { Car, Member } from "@/lib/types";
+import { Car, MemberFromFunction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
@@ -41,54 +41,50 @@ export default function BalancesPage() {
           return;
         }
 
-        setCar(carData);
+        setCar({
+          ...carData,
+          currency: carData.currency || "CAD",
+          distance_unit: carData.distance_unit || "km",
+          fuel_unit: carData.fuel_unit || "L",
+        } as Car);
 
         // Get all data using query functions
         const activeMembers = await getActiveMembers(supabase, user.id);
-        const fuelFills = await getCarFuelFills(supabase, user.id);
+        const expenses = await getCarExpenses(supabase, user.id);
         const trips = await getCarTrips(supabase, user.id);
         const settlements = await getCarSettlements(supabase, user.id);
 
         // Calculate balances using service
         const memberBalances = calculateMemberBalances(
           activeMembers,
-          fuelFills,
+          expenses,
           trips,
           settlements,
           carData
         );
 
-        // Transform to Balance type for table and sort
+        // Transform to Balance type for table
         const balancesForTable: Balance[] = memberBalances.map((mb) => ({
           member_id: mb.member.id,
-          member_name: mb.member.name,
+          member_name: mb.member.name || "Unknown",
           fuel_paid: mb.fuelPaid,
           trip_usage: mb.tripUsage,
           settlements_received: mb.settlementsReceived,
           settlements_sent: mb.settlementsSent,
           net_balance: mb.netBalance,
-          is_guest: mb.member.is_guest || false,
+          is_guest: mb.member.role === "guest",
           user_id: mb.member.user_id,
         }));
 
         // Sort using service
-        const sortedBalances = sortMembersByPriority(
-          balancesForTable.map(
-            (b) =>
-              ({
-                id: b.member_id,
-                name: b.member_name,
-                is_guest: b.is_guest,
-                user_id: b.user_id,
-              }) as Member
-          ),
-          user.id
-        );
+        const sortedMembers = sortMembersByPriority(activeMembers, user.id);
 
         // Re-map to Balance[] in sorted order
-        const finalBalances = sortedBalances.map(
-          (member) => balancesForTable.find((b) => b.member_id === member.id)!
-        );
+        const finalBalances = sortedMembers
+          .map((member) =>
+            balancesForTable.find((b) => b.member_id === member.id)
+          )
+          .filter((b): b is Balance => b !== undefined);
 
         setBalances(finalBalances);
       } catch (error) {
