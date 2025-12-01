@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
 import { getUserCar } from "@/lib/queries/cars";
-import { getCarMembers, getCarFuelFills, getCarTrips, getCarSettlements } from "@/lib/queries";
+import {
+  getActiveMembers,
+  getCarFuelFills,
+  getCarTrips,
+  getCarSettlements,
+} from "@/lib/queries";
 import { calculateMemberBalances } from "@/lib/services";
 import { sortMembersByPriority } from "@/lib/services/member-sorter";
 import { Car, Member } from "@/lib/types";
@@ -39,8 +44,7 @@ export default function BalancesPage() {
         setCar(carData);
 
         // Get all data using query functions
-        const members = await getCarMembers(supabase, user.id);
-        const activeMembers = members.filter((m) => !m.archived);
+        const activeMembers = await getActiveMembers(supabase, user.id);
         const fuelFills = await getCarFuelFills(supabase, user.id);
         const trips = await getCarTrips(supabase, user.id);
         const settlements = await getCarSettlements(supabase, user.id);
@@ -69,18 +73,21 @@ export default function BalancesPage() {
 
         // Sort using service
         const sortedBalances = sortMembersByPriority(
-          balancesForTable.map((b) => ({
-            id: b.member_id,
-            name: b.member_name,
-            is_guest: b.is_guest,
-            user_id: b.user_id,
-          } as Member)),
+          balancesForTable.map(
+            (b) =>
+              ({
+                id: b.member_id,
+                name: b.member_name,
+                is_guest: b.is_guest,
+                user_id: b.user_id,
+              }) as Member
+          ),
           user.id
         );
 
         // Re-map to Balance[] in sorted order
-        const finalBalances = sortedBalances.map((member) =>
-          balancesForTable.find((b) => b.member_id === member.id)!
+        const finalBalances = sortedBalances.map(
+          (member) => balancesForTable.find((b) => b.member_id === member.id)!
         );
 
         setBalances(finalBalances);
