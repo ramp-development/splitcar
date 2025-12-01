@@ -4,23 +4,28 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { TripInsert, TripUpdate } from "@/lib/types";
 
+// Input types using Pick to be explicit about what's required
+type AddTripInput = Pick<TripInsert, "car_id" | "name" | "distance_km" | "passenger_member_ids"> & {
+  date: Date; // Accept Date object, we'll convert to string
+};
+
+type UpdateTripInput = Partial<
+  Pick<TripUpdate, "name" | "distance_km" | "passenger_member_ids">
+> & {
+  date?: Date; // Accept Date object, we'll convert to string
+};
+
 /**
  * Add a new trip
  */
-export async function addTrip(data: {
-  carId: string;
-  name?: string;
-  distanceKm: number;
-  passengerMemberIds: string[];
-  date: Date;
-}) {
+export async function addTrip(data: AddTripInput) {
   const supabase = await createClient();
 
   const tripData: TripInsert = {
-    car_id: data.carId,
-    name: data.name || null,
-    distance_km: data.distanceKm,
-    passenger_member_ids: data.passengerMemberIds,
+    car_id: data.car_id,
+    name: data.name,
+    distance_km: data.distance_km,
+    passenger_member_ids: data.passenger_member_ids,
     date: data.date.toISOString().split("T")[0],
   };
 
@@ -39,19 +44,14 @@ export async function addTrip(data: {
  */
 export async function updateTrip(
   tripId: string,
-  data: {
-    name?: string;
-    distanceKm?: number;
-    passengerMemberIds?: string[];
-    date?: Date;
-  }
+  data: UpdateTripInput
 ) {
   const supabase = await createClient();
 
   const updateData: TripUpdate = {};
-  if (data.name !== undefined) updateData.name = data.name || null;
-  if (data.distanceKm !== undefined) updateData.distance_km = data.distanceKm;
-  if (data.passengerMemberIds !== undefined) updateData.passenger_member_ids = data.passengerMemberIds;
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.distance_km !== undefined) updateData.distance_km = data.distance_km;
+  if (data.passenger_member_ids !== undefined) updateData.passenger_member_ids = data.passenger_member_ids;
   if (data.date !== undefined) updateData.date = data.date.toISOString().split("T")[0];
 
   const { error } = await supabase

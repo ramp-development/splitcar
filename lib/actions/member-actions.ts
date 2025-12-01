@@ -4,25 +4,18 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { MemberInsert, MemberUpdate } from "@/lib/types";
 
+// Input types using Pick to be explicit about what's required
+type AddMemberInput = Pick<MemberInsert, "car_id" | "name" | "phone" | "is_guest">;
+
+type UpdateMemberInput = Partial<Pick<MemberUpdate, "name" | "phone" | "is_guest">>;
+
 /**
  * Add a new member to a car
  */
-export async function addMember(data: {
-  carId: string;
-  name: string;
-  phone?: string;
-  isGuest: boolean;
-}) {
+export async function addMember(data: AddMemberInput) {
   const supabase = await createClient();
 
-  const memberData: MemberInsert = {
-    car_id: data.carId,
-    name: data.name,
-    phone: data.phone || null,
-    is_guest: data.isGuest,
-  };
-
-  const { error } = await supabase.from("members").insert(memberData);
+  const { error } = await supabase.from("members").insert(data);
 
   if (error) {
     throw new Error(`Failed to add member: ${error.message}`);
@@ -34,21 +27,12 @@ export async function addMember(data: {
 /**
  * Update an existing member
  */
-export async function updateMember(memberId: string, data: {
-  name?: string;
-  phone?: string;
-  isGuest?: boolean;
-}) {
+export async function updateMember(memberId: string, data: UpdateMemberInput) {
   const supabase = await createClient();
-
-  const updateData: MemberUpdate = {};
-  if (data.name !== undefined) updateData.name = data.name;
-  if (data.phone !== undefined) updateData.phone = data.phone || null;
-  if (data.isGuest !== undefined) updateData.is_guest = data.isGuest;
 
   const { error } = await supabase
     .from("members")
-    .update(updateData)
+    .update(data)
     .eq("id", memberId);
 
   if (error) {

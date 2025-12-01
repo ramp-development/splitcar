@@ -4,21 +4,28 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { FuelFillInsert, FuelFillUpdate } from "@/lib/types";
 
+// Input types using Pick to be explicit about what's required
+type AddFuelFillInput = Pick<
+  FuelFillInsert,
+  "car_id" | "payer_member_id" | "amount"
+> & {
+  date: Date; // Accept Date object, we'll convert to string
+};
+
+type UpdateFuelFillInput = Partial<
+  Pick<FuelFillUpdate, "payer_member_id" | "amount">
+> & {
+  date?: Date; // Accept Date object, we'll convert to string
+};
+
 /**
  * Add a new fuel fill
  */
-export async function addFuelFill(data: {
-  carId: string;
-  payerMemberId: string;
-  amount: number;
-  date: Date;
-}) {
+export async function addFuelFill(data: AddFuelFillInput) {
   const supabase = await createClient();
 
   const fuelFillData: FuelFillInsert = {
-    car_id: data.carId,
-    payer_member_id: data.payerMemberId,
-    amount: data.amount,
+    ...data,
     date: data.date.toISOString().split("T")[0],
   };
 
@@ -37,18 +44,16 @@ export async function addFuelFill(data: {
  */
 export async function updateFuelFill(
   fuelFillId: string,
-  data: {
-    payerMemberId?: string;
-    amount?: number;
-    date?: Date;
-  }
+  data: UpdateFuelFillInput
 ) {
   const supabase = await createClient();
 
   const updateData: FuelFillUpdate = {};
-  if (data.payerMemberId !== undefined) updateData.payer_member_id = data.payerMemberId;
+  if (data.payer_member_id !== undefined)
+    updateData.payer_member_id = data.payer_member_id;
   if (data.amount !== undefined) updateData.amount = data.amount;
-  if (data.date !== undefined) updateData.date = data.date.toISOString().split("T")[0];
+  if (data.date !== undefined)
+    updateData.date = data.date.toISOString().split("T")[0];
 
   const { error } = await supabase
     .from("fuel_fills")
