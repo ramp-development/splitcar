@@ -355,88 +355,53 @@ export default function MembersPage() {
 
 ---
 
-### 5. RLS Policy Audit & Cleanup
+### 5. RLS Policy Strategy - REVISED ✅
 
 **Problem:**
-- Multiple migrations creating/updating policies
-- Some policies may conflict or be redundant
-- Hard to understand current security posture
-- No clear documentation of access rules
+- Multiple migrations creating/updating policies (008-019 show ~12 RLS-related migrations)
+- Auth system changing from Supabase UUID to Clerk text IDs
+- Schema changing (adding invite_code to members, simplifying users table)
+- Would need to redo all policies after Clerk migration anyway
 
-**Solution: Comprehensive RLS Audit & Reorganization**
+**Revised Solution: Temporarily Disable RLS, Fresh Design After Migration**
 
-**Current State Analysis:**
+**Decision**:
+- ✅ **Disable RLS temporarily** (migration 020)
+- ✅ **Keep SECURITY DEFINER functions** - they're useful for query layer
+- ✅ **Document current functions** (see `docs/DATABASE_FUNCTIONS.md`)
+- 🔜 **Design fresh RLS** after Clerk + invite system are implemented
 
-Review all existing policies across tables:
-- `cars` - Owner and member access
-- `members` - Owner, member self-read, and linked member access
-- `fuel_fills` - Car access via owner/member
-- `trips` - Car access via owner/member
-- `settlements` - Car access via owner/member
+**Rationale:**
+1. Current RLS is complex and has been patched multiple times
+2. Clerk uses different auth.uid() approach (text vs uuid)
+3. New schema requires different policies (invite system)
+4. More efficient to design RLS once with final structure
 
-**Action Items:**
+**What We're Keeping:**
 
-1. **Audit Current Policies**
-   - [ ] List all active RLS policies per table
-   - [ ] Identify redundant or conflicting policies
-   - [ ] Document intended access patterns
-   - [ ] Check for security gaps
+Database functions (documented in `docs/DATABASE_FUNCTIONS.md`):
+- `get_user_car(p_user_id)` - Get car for owner/member
+- `get_car_members(p_user_id)` - Get all members
+- `get_car_fuel_fills(p_user_id)` - Get fuel fills with payer names
+- `get_car_trips(p_user_id)` - Get all trips
+- `get_car_settlements(p_user_id)` - Get settlements with names
+- `auto_link_member_by_phone(p_phone, p_user_id)` - Auto-link members
 
-2. **Create Clean RLS Migration**
-   - [ ] Create comprehensive RLS documentation
-   - [ ] Write new migration that:
-     - Drops all existing policies
-     - Creates clean, well-named policies
-     - Uses consistent naming convention
-   - [ ] Policy naming: `[table]_[action]_[subject]`
-     - Example: `cars_select_owner`, `cars_select_member`
+These functions will be updated for Clerk auth in Phase 2.
 
-3. **RLS Policy Principles**
-   - **Cars**: Owner full access, members read-only
-   - **Members**: Owner full access, members can read all, users can update their linked member
-   - **Fuel Fills**: Owner full access, members full access (for their car)
-   - **Trips**: Owner full access, members full access (for their car)
-   - **Settlements**: Owner full access, members full access (for their car)
-   - **Car Invites**: Owner full access, public read for active invites
+**Migration 020**: `disable_rls_for_refactor.sql`
+- Disables RLS on all tables
+- Drops all existing policies
+- Keeps all SECURITY DEFINER functions
+- Well-documented for future reference
 
-4. **Testing**
-   - [ ] Create test users (owner, member, guest)
-   - [ ] Verify each policy works as expected
-   - [ ] Test edge cases (archived members, multiple cars, etc.)
-
-**New RLS Structure:**
-
-```sql
--- Example clean policy structure
--- Enable RLS
-ALTER TABLE cars ENABLE ROW LEVEL SECURITY;
-
--- Cars: Owner can do everything
-CREATE POLICY cars_all_owner ON cars
-  FOR ALL
-  TO authenticated
-  USING (owner_id = auth.uid());
-
--- Cars: Members can read their car
-CREATE POLICY cars_select_member ON cars
-  FOR SELECT
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM members
-      WHERE members.car_id = cars.id
-      AND members.user_id = auth.uid()
-    )
-  );
-```
-
-**Documentation:**
-
-Create `docs/DATABASE_SECURITY.md`:
-- Overview of RLS approach
-- Table-by-table policy explanation
-- Access matrix (who can do what)
-- Testing procedures
+**Fresh RLS Design** (after Phase 2):
+Will implement clean policies with:
+- Clerk auth integration (text user IDs)
+- Invite system support
+- Clear naming convention
+- Comprehensive testing
+- Full documentation in `docs/DATABASE_SECURITY.md`
 
 ---
 
