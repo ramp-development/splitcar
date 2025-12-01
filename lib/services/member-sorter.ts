@@ -1,5 +1,12 @@
 import { MemberFromFunction } from "@/lib/types";
 
+export type MemberGroups = {
+  currentUser: MemberFromFunction | null;
+  ownerMembers: MemberFromFunction[];
+  guestMembers: MemberFromFunction[];
+  activeMembers: MemberFromFunction[];
+};
+
 /**
  * Sort members by priority: admin first, current user, owners, guests, then by join date
  */
@@ -37,10 +44,10 @@ export function sortMembersByPriority(
 export function groupMembersForSelect(
   members: MemberFromFunction[],
   currentUserId: string | null
-) {
+): MemberGroups {
   const activeMembers = members.filter((m) => !m.archived);
 
-  const currentUser = activeMembers.find((m) => m.user_id === currentUserId);
+  const currentUser = activeMembers.find((m) => m.user_id === currentUserId) || null;
   const ownerMembers = activeMembers
     .filter((m) => m.user_id !== currentUserId && m.role === "owner")
     .sort((a, b) => {

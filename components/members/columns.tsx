@@ -13,14 +13,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export type Member = {
-  id: string;
-  name: string;
-  phone: string | null;
-  is_guest: boolean;
-  user_id: string | null;
-  archived: boolean;
-};
+import { MemberFromFunction } from "@/lib/types";
+
+export type Member = MemberFromFunction;
 
 export function createMemberColumns(
   currentUserId: string | undefined,
@@ -46,24 +41,12 @@ export function createMemberColumns(
       },
     },
     {
-      accessorKey: "phone",
-      header: "Phone",
-      cell: ({ row }) => {
-        const phone = row.getValue("phone") as string | null;
-        return (
-          <span className="text-muted-foreground">
-            {phone || "No phone number"}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "is_guest",
+      accessorKey: "role",
       header: "Type",
       cell: ({ row }) => {
-        const isGuest = row.getValue("is_guest") as boolean;
+        const role = row.getValue("role") as "owner" | "guest";
 
-        return isGuest ? (
+        return role === "guest" ? (
           <Badge variant="outline">Guest</Badge>
         ) : (
           <Badge variant="secondary">Owner</Badge>
@@ -75,17 +58,12 @@ export function createMemberColumns(
       header: "Status",
       cell: ({ row }) => {
         const hasAccount = !!row.original.user_id;
-        const hasPhone = !!row.original.phone;
 
         if (hasAccount) {
           return <Badge variant="default">Joined</Badge>;
         }
 
-        if (hasPhone) {
-          return <Badge variant="secondary">Pending</Badge>;
-        }
-
-        return <Badge variant="outline">No phone</Badge>;
+        return <Badge variant="secondary">Pending</Badge>;
       },
     },
     {
@@ -93,7 +71,7 @@ export function createMemberColumns(
       cell: ({ row }) => {
         const member = row.original;
         const isCurrentUser = member.user_id === currentUserId;
-        const canInvite = member.phone && !member.user_id;
+        const canInvite = !member.user_id;
 
         return (
           <DropdownMenu>
@@ -117,9 +95,9 @@ export function createMemberColumns(
               {!isCurrentUser && (
                 <>
                   <DropdownMenuItem
-                    onClick={() => onToggleGuest(member.id, !member.is_guest)}
+                    onClick={() => onToggleGuest(member.id, member.role !== "guest")}
                   >
-                    {member.is_guest ? "Make Member" : "Make Guest"}
+                    {member.role === "guest" ? "Make Owner" : "Make Guest"}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

@@ -27,7 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Plus, ChevronDownIcon } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
-import { createTripColumns, Trip } from "@/components/trips/columns";
+import { createTripColumns, TripTableRow } from "@/components/trips/columns";
 
 type Member = {
   id: string;
@@ -41,17 +41,17 @@ type Car = {
   id: string;
   currency: string;
   distance_unit: string;
-  efficiency_km_per_litre: number;
-  avg_price_per_litre: number;
+  km_per_litre: number;
+  default_price_per_litre: number;
 };
 
 export default function TripsPage() {
-  const [trips, setTrips] = useState<Trip[]>([]);
+  const [trips, setTrips] = useState<TripTableRow[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
+  const [editingTrip, setEditingTrip] = useState<TripTableRow | null>(null);
   const [tripForm, setTripForm] = useState({
     name: "",
     distanceKm: "",
@@ -77,9 +77,11 @@ export default function TripsPage() {
         }
 
         setCar({
-          ...carData,
+          id: carData.id,
           currency: carData.currency || "CAD",
           distance_unit: carData.distance_unit || "km",
+          km_per_litre: carData.km_per_litre || 0,
+          default_price_per_litre: carData.default_price_per_litre || 0,
         });
 
         // Get members using function (bypasses RLS)
@@ -102,9 +104,9 @@ export default function TripsPage() {
 
         // Transform trips data
         const transformedTrips = await Promise.all(
-          (tripsData || []).map(async (trip: Trip) => {
+          (tripsData || []).map(async (trip: TripTableRow) => {
             // Get passenger names
-            const passengerNames = (trip.passenger_member_ids || [])
+            const passengerNames = (trip.passengers || [])
               .map((id: string) => {
                 const member = membersData?.find((m: Member) => m.id === id);
                 return member?.name || "Unknown";
@@ -113,17 +115,17 @@ export default function TripsPage() {
 
             // Calculate costs
             const costPerKm =
-              carData.avg_price_per_litre / carData.efficiency_km_per_litre;
-            const totalCost = trip.distance_km * costPerKm;
-            const passengerCount = trip.passenger_member_ids?.length || 1;
+              (carData.default_price_per_litre || 0) / (carData.km_per_litre || 1);
+            const totalCost = trip.distance * costPerKm;
+            const passengerCount = trip.passengers?.length || 1;
             const costPerPassenger = totalCost / passengerCount;
 
             return {
               id: trip.id,
               car_id: trip.car_id,
               name: trip.name,
-              distance_km: trip.distance_km,
-              passenger_member_ids: trip.passenger_member_ids || [],
+              distance: trip.distance,
+              passengers: trip.passengers || [],
               date: trip.date,
               created_at: trip.created_at,
               passenger_names: passengerNames,
@@ -163,8 +165,8 @@ export default function TripsPage() {
           .from("trips")
           .update({
             name: tripForm.name || null,
-            distance_km: parseFloat(tripForm.distanceKm),
-            passenger_member_ids: tripForm.passengerIds,
+            distance: parseFloat(tripForm.distanceKm),
+            passengers: tripForm.passengerIds,
             date: tripForm.date.toISOString().split("T")[0],
           })
           .eq("id", editingTrip.id);
@@ -177,8 +179,8 @@ export default function TripsPage() {
         const { error } = await supabase.from("trips").insert({
           car_id: car.id,
           name: tripForm.name || null,
-          distance_km: parseFloat(tripForm.distanceKm),
-          passenger_member_ids: tripForm.passengerIds,
+          distance: parseFloat(tripForm.distanceKm),
+          passengers: tripForm.passengerIds,
           date: tripForm.date.toISOString().split("T")[0],
         });
 
@@ -196,7 +198,7 @@ export default function TripsPage() {
 
       const transformedTrips = await Promise.all(
         (tripsData || []).map(async (trip) => {
-          const passengerNames = (trip.passenger_member_ids || [])
+          const passengerNames = (trip.passengers || [])
             .map((id: string) => {
               const member = members.find((m) => m.id === id);
               return member?.name || "Unknown";
@@ -204,17 +206,17 @@ export default function TripsPage() {
             .filter(Boolean);
 
           const costPerKm =
-            car.avg_price_per_litre / car.efficiency_km_per_litre;
-          const totalCost = trip.distance_km * costPerKm;
-          const passengerCount = trip.passenger_member_ids?.length || 1;
+            car.default_price_per_litre / car.km_per_litre;
+          const totalCost = trip.distance * costPerKm;
+          const passengerCount = trip.passengers?.length || 1;
           const costPerPassenger = totalCost / passengerCount;
 
           return {
             id: trip.id,
             car_id: trip.car_id,
             name: trip.name,
-            distance_km: trip.distance_km,
-            passenger_member_ids: trip.passenger_member_ids || [],
+            distance: trip.distance,
+            passengers: trip.passengers || [],
             date: trip.date,
             created_at: trip.created_at,
             passenger_names: passengerNames,
@@ -244,12 +246,12 @@ export default function TripsPage() {
     }
   }
 
-  function handleEditTrip(trip: Trip) {
+  function handleEditTrip(trip: TripTableRow) {
     setEditingTrip(trip);
     setTripForm({
       name: trip.name || "",
-      distanceKm: trip.distance_km.toString(),
-      passengerIds: trip.passenger_member_ids,
+      distanceKm: trip.distance.toString(),
+      passengerIds: trip.passengers,
       date: new Date(trip.date),
     });
     setDialogOpen(true);

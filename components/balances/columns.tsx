@@ -1,22 +1,11 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-
-export type Balance = {
-  member_id: string;
-  member_name: string;
-  fuel_paid: number;
-  trip_usage: number;
-  settlements_received: number;
-  settlements_sent: number;
-  net_balance: number;
-  is_guest: boolean;
-  user_id: string | null;
-};
+import { BalanceTableRow } from "@/lib/types/balance";
 
 export function createBalanceColumns(
   currency: string
-): ColumnDef<Balance>[] {
+): ColumnDef<BalanceTableRow>[] {
   return [
     {
       accessorKey: "member_name",
@@ -26,10 +15,10 @@ export function createBalanceColumns(
       },
     },
     {
-      accessorKey: "fuel_paid",
+      accessorKey: "fuelPaid",
       header: "Fuel Paid",
       cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("fuel_paid"));
+        const amount = parseFloat(row.getValue("fuelPaid"));
         return (
           <span className="text-muted-foreground">
             {currency} {amount.toFixed(2)}
@@ -38,10 +27,10 @@ export function createBalanceColumns(
       },
     },
     {
-      accessorKey: "trip_usage",
+      accessorKey: "tripUsage",
       header: "Trip Usage",
       cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("trip_usage"));
+        const amount = parseFloat(row.getValue("tripUsage"));
         return (
           <span className="text-muted-foreground">
             {currency} {amount.toFixed(2)}
@@ -50,10 +39,10 @@ export function createBalanceColumns(
       },
     },
     {
-      accessorKey: "settlements_received",
+      accessorKey: "settlementsReceived",
       header: "Received",
       cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("settlements_received"));
+        const amount = parseFloat(row.getValue("settlementsReceived"));
         return (
           <span className="text-muted-foreground">
             {currency} {amount.toFixed(2)}
@@ -62,10 +51,10 @@ export function createBalanceColumns(
       },
     },
     {
-      accessorKey: "settlements_sent",
+      accessorKey: "settlementsSent",
       header: "Sent",
       cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("settlements_sent"));
+        const amount = parseFloat(row.getValue("settlementsSent"));
         return (
           <span className="text-muted-foreground">
             {currency} {amount.toFixed(2)}
@@ -74,10 +63,10 @@ export function createBalanceColumns(
       },
     },
     {
-      accessorKey: "net_balance",
+      accessorKey: "netBalance",
       header: "Balance",
       cell: ({ row }) => {
-        const balance = parseFloat(row.getValue("net_balance"));
+        const balance = parseFloat(row.getValue("netBalance"));
         const isPositive = balance > 0;
         const isZero = Math.abs(balance) < 0.01;
 

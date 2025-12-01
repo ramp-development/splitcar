@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/client";
 import { getUserCar } from "@/lib/queries/cars";
+import { getFirstName } from "@/lib/types/member";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -122,7 +123,7 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold mb-1">
-            Welcome back, {userName?.split(" ")[0] || userName}!
+            Welcome back, {getFirstName(userName)}!
           </h1>
           <p className="text-muted-foreground">Your SplitCar overview</p>
           {carName && (

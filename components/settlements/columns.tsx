@@ -10,22 +10,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SettlementFromFunction } from "@/lib/types";
 
-export type Settlement = {
-  id: string;
-  car_id: string;
-  from_member_id: string;
-  to_member_id: string;
-  amount: number;
-  created_at: string;
-  from_member_name: string;
-  to_member_name: string;
-};
+// Use Pick to select only the fields needed for display
+export type SettlementTableRow = Pick<
+  SettlementFromFunction,
+  "id" | "car_id" | "from_id" | "to_id" | "amount" | "created_at" | "from_name" | "to_name"
+>;
 
 export function createSettlementColumns(
   currency: string,
   onDelete: (settlementId: string) => void
-): ColumnDef<Settlement>[] {
+): ColumnDef<SettlementTableRow>[] {
   return [
     {
       accessorKey: "created_at",
@@ -44,17 +40,17 @@ export function createSettlementColumns(
       },
     },
     {
-      accessorKey: "from_member_name",
+      accessorKey: "from_name",
       header: "From",
       cell: ({ row }) => {
-        return <span>{row.getValue("from_member_name")}</span>;
+        return <span>{row.getValue("from_name")}</span>;
       },
     },
     {
-      accessorKey: "to_member_name",
+      accessorKey: "to_name",
       header: "To",
       cell: ({ row }) => {
-        return <span>{row.getValue("to_member_name")}</span>;
+        return <span>{row.getValue("to_name")}</span>;
       },
     },
     {

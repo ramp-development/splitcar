@@ -10,6 +10,14 @@ export type MemberBalance<T extends { id: string; archived?: boolean | null } = 
   netBalance: number;
 };
 
+// Flattened balance type for table display (using Pick from MemberBalance + member fields)
+export type BalanceTableRow = Omit<MemberBalance, "member"> & {
+  member_id: string;
+  member_name: string;
+  member_role: "owner" | "guest";
+  member_user_id: string | null;
+};
+
 // Helper to determine if balance is positive (owed) or negative (owes)
 export function isOwed<T extends { id: string; archived?: boolean | null }>(
   balance: MemberBalance<T>

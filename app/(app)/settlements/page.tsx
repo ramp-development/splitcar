@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
 import { getUserCar } from "@/lib/queries/cars";
+import { SettlementFromFunction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,8 @@ import { Plus } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import {
   createSettlementColumns,
-  Settlement,
+  SettlementTableRow,
+  
 } from "@/components/settlements/columns";
 
 type Member = {
@@ -38,7 +40,7 @@ type Member = {
   name: string;
   archived: boolean;
   user_id: string | null;
-  is_guest: boolean;
+  role: "owner" | "guest";
 };
 
 type Car = {
@@ -47,7 +49,7 @@ type Car = {
 };
 
 export default function SettlementsPage() {
-  const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [settlements, setSettlements] = useState<SettlementTableRow[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,17 +95,8 @@ export default function SettlementsPage() {
 
         if (settlementsError) throw settlementsError;
 
-        // Transform settlements data
-        const transformedSettlements = (settlementsData || []).map((settlement: any) => ({
-          id: settlement.id,
-          car_id: settlement.car_id,
-          from_member_id: settlement.from_member_id,
-          to_member_id: settlement.to_member_id,
-          from_member_name: settlement.from_member_name || "Unknown",
-          to_member_name: settlement.to_member_name || "Unknown",
-          amount: settlement.amount,
-          created_at: settlement.created_at,
-        }));
+        // Transform settlements data using helper
+        const transformedSettlements = (settlementsData || []);
 
         setSettlements(transformedSettlements);
       } catch (error) {
@@ -132,8 +125,8 @@ export default function SettlementsPage() {
       // Add new settlement
       const { error } = await supabase.from("settlements").insert({
         car_id: car.id,
-        from_member_id: settlementForm.fromMemberId,
-        to_member_id: settlementForm.toMemberId,
+        from_id: settlementForm.fromMemberId,
+        to_id: settlementForm.toMemberId,
         amount: parseFloat(settlementForm.amount),
       });
 
@@ -141,35 +134,14 @@ export default function SettlementsPage() {
 
       toast.success("Settlement recorded!");
 
-      // Reload settlements
-      const { data: settlementsData } = await supabase
-        .from("settlements")
-        .select(
-          `
-          *,
-          from_member:members!settlements_from_member_id_fkey (
-            name
-          ),
-          to_member:members!settlements_to_member_id_fkey (
-            name
-          )
-        `
-        )
-        .eq("car_id", car.id)
-        .order("created_at", { ascending: false });
-
-      const transformedSettlements = (settlementsData || []).map(
-        (settlement) => ({
-          id: settlement.id,
-          car_id: settlement.car_id,
-          from_member_id: settlement.from_member_id,
-          to_member_id: settlement.to_member_id,
-          amount: settlement.amount,
-          created_at: settlement.created_at,
-          from_member_name: settlement.from_member?.name || "Unknown",
-          to_member_name: settlement.to_member?.name || "Unknown",
-        })
+      // Reload settlements using RPC function
+      if (!user) return;
+      const { data: settlementsData } = await supabase.rpc(
+        "get_car_settlements",
+        { p_user_id: user.id }
       );
+
+      const transformedSettlements = (settlementsData || []);
 
       setSettlements(transformedSettlements);
       setDialogOpen(false);
@@ -216,10 +188,10 @@ export default function SettlementsPage() {
   // Group members by type
   const currentUser = activeMembers.find((m) => m.user_id === user?.id);
   const otherMembers = activeMembers
-    .filter((m) => m.user_id !== user?.id && !m.is_guest)
+    .filter((m) => m.user_id !== user?.id && m.role === "owner")
     .sort((a, b) => a.name.localeCompare(b.name));
   const guestMembers = activeMembers
-    .filter((m) => m.is_guest)
+    .filter((m) => m.role === "guest")
     .sort((a, b) => a.name.localeCompare(b.name));
 
   if (loading) {

@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
 import { getUserCar } from "@/lib/queries/cars";
+import { getCarMembers } from "@/lib/queries/members";
+import { getCarExpenses } from "@/lib/queries/expenses";
+import { addExpense, updateExpense, deleteExpense } from "@/lib/actions";
+import { groupMembersForSelect, MemberGroups } from "@/lib/services/member-sorter";
+import { CarFromFunction, ExpenseFromFunction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,29 +39,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { Plus, ChevronDownIcon } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
-import { createFuelFillColumns, FuelFill } from "@/components/fuel-fills/columns";
+import { createExpenseColumns, ExpenseTableRow } from "@/components/expenses/columns";
 
-type Member = {
-  id: string;
-  name: string;
-  archived: boolean;
-  user_id: string | null;
-  is_guest: boolean;
-};
-
-type Car = {
-  id: string;
-  currency: string;
-};
-
-export default function FuelFillsPage() {
-  const [fuelFills, setFuelFills] = useState<FuelFill[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [car, setCar] = useState<Car | null>(null);
+export default function ExpenseTableRowsPage() {
+  const [fuelFills, setExpenseTableRows] = useState<ExpenseTableRow[]>([]);
+  const [car, setCar] = useState<CarFromFunction | null>(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingFuelFill, setEditingFuelFill] = useState<FuelFill | null>(null);
-  const [fuelFillForm, setFuelFillForm] = useState({
+  const [editingExpenseTableRow, setEditingExpenseTableRow] = useState<ExpenseTableRow | null>(null);
+  const [fuelFillForm, setExpenseTableRowForm] = useState({
     payerMemberId: "",
     amount: "",
     date: new Date(),
@@ -65,6 +56,14 @@ export default function FuelFillsPage() {
   const { user } = useAuth();
   const router = useRouter();
 
+  // Member selection groups
+  const [memberGroups, setMemberGroups] = useState<MemberGroups>({
+    currentUser: null,
+    ownerMembers: [],
+    guestMembers: [],
+    activeMembers: [],
+  });
+
   useEffect(() => {
     async function loadData() {
       if (!user) return;
@@ -72,49 +71,30 @@ export default function FuelFillsPage() {
       const supabase = createClient();
 
       try {
-        // Get user's car using function (bypasses RLS)
+        // Get user's car
         const carData = await getUserCar(supabase, user.id);
         if (!carData) {
           router.push("/dashboard");
           return;
         }
 
-        setCar({ id: carData.id, currency: carData.currency || "CAD" });
+        setCar(carData as CarFromFunction);
 
-        // Get members using function (bypasses RLS)
-        const { data: allMembers, error: membersError } = await supabase.rpc(
-          "get_car_members",
-          { p_user_id: user.id }
-        );
+        // Get members and expenses
+        const [members, expenses] = await Promise.all([
+          getCarMembers(supabase, user.id),
+          getCarExpenses(supabase, user.id),
+        ]);
 
-        if (membersError) throw membersError;
+        // Group members for select dropdown
+        setMemberGroups(groupMembersForSelect(members, user.id));
 
-        // Filter and sort members
-        const membersData = (allMembers || []).sort((a: Member, b: Member) =>
-          a.name.localeCompare(b.name)
-        );
-        setMembers(membersData);
+        // Filter only fuel expenses and transform for table using helper
+        const fuelExpenses = expenses
+          .filter((e) => e.type.toLowerCase() === "fuel")
+          ;
 
-        // Get fuel fills using function (bypasses RLS)
-        const { data: fuelFillsData, error: fuelFillsError } = await supabase.rpc(
-          "get_car_fuel_fills",
-          { p_user_id: user.id }
-        );
-
-        if (fuelFillsError) throw fuelFillsError;
-
-        // Data already includes payer_name from the function
-        const transformedFuelFills = (fuelFillsData || []).map((fill: any) => ({
-          id: fill.id,
-          car_id: fill.car_id,
-          payer_member_id: fill.payer_member_id,
-          amount: fill.amount,
-          date: fill.date,
-          created_at: fill.created_at,
-          payer_name: fill.payer_name || "Unknown",
-        }));
-
-        setFuelFills(transformedFuelFills);
+        setExpenseTableRows(fuelExpenses);
       } catch (error) {
         console.error(error);
         toast.error("Failed to load fuel fills");
@@ -126,158 +106,85 @@ export default function FuelFillsPage() {
     loadData();
   }, [user, router]);
 
-  async function handleSubmitFuelFill(e: React.FormEvent) {
+  async function handleSubmitExpenseTableRow(e: React.FormEvent) {
     e.preventDefault();
     if (!car) return;
 
-    const supabase = createClient();
-
     try {
-      if (editingFuelFill) {
+      if (editingExpenseTableRow) {
         // Update existing fuel fill
-        const { error } = await supabase
-          .from("fuel_fills")
-          .update({
-            payer_member_id: fuelFillForm.payerMemberId,
-            amount: parseFloat(fuelFillForm.amount),
-            date: fuelFillForm.date.toISOString().split("T")[0],
-          })
-          .eq("id", editingFuelFill.id);
-
-        if (error) throw error;
-
-        toast.success("Fuel fill updated!");
-
-        // Reload fuel fills
-        const { data: fuelFillsData } = await supabase
-          .from("fuel_fills")
-          .select(
-            `
-            *,
-            members!fuel_fills_payer_member_id_fkey (
-              name
-            )
-          `
-          )
-          .eq("car_id", car.id)
-          .order("date", { ascending: false });
-
-        const transformedFuelFills = (fuelFillsData || []).map((fill) => ({
-          id: fill.id,
-          car_id: fill.car_id,
-          payer_member_id: fill.payer_member_id,
-          amount: fill.amount,
-          date: fill.date,
-          created_at: fill.created_at,
-          payer_name: fill.members?.name || "Unknown",
-        }));
-
-        setFuelFills(transformedFuelFills);
-      } else {
-        // Add new fuel fill
-        const { error } = await supabase.from("fuel_fills").insert({
-          car_id: car.id,
-          payer_member_id: fuelFillForm.payerMemberId,
+        await updateExpense(editingExpenseTableRow.id, {
+          payer_id: fuelFillForm.payerMemberId,
           amount: parseFloat(fuelFillForm.amount),
-          date: fuelFillForm.date.toISOString().split("T")[0],
+          date: fuelFillForm.date,
         });
 
-        if (error) throw error;
+        toast.success("Fuel fill updated!");
+      } else {
+        // Add new fuel fill
+        await addExpense({
+          car_id: car.id,
+          payer_id: fuelFillForm.payerMemberId,
+          type: "Fuel",
+          amount: parseFloat(fuelFillForm.amount),
+          date: fuelFillForm.date,
+        });
 
         toast.success("Fuel fill added!");
-
-        // Reload fuel fills
-        const { data: fuelFillsData } = await supabase
-          .from("fuel_fills")
-          .select(
-            `
-            *,
-            members!fuel_fills_payer_member_id_fkey (
-              name
-            )
-          `
-          )
-          .eq("car_id", car.id)
-          .order("date", { ascending: false });
-
-        const transformedFuelFills = (fuelFillsData || []).map((fill) => ({
-          id: fill.id,
-          car_id: fill.car_id,
-          payer_member_id: fill.payer_member_id,
-          amount: fill.amount,
-          date: fill.date,
-          created_at: fill.created_at,
-          payer_name: fill.members?.name || "Unknown",
-        }));
-
-        setFuelFills(transformedFuelFills);
       }
 
+      // Reload data
+      const supabase = createClient();
+      const expenses = await getCarExpenses(supabase, user!.id);
+      const fuelExpenses = expenses
+        .filter((e) => e.type.toLowerCase() === "fuel")
+        ;
+
+      setExpenseTableRows(fuelExpenses);
       setDialogOpen(false);
-      setEditingFuelFill(null);
-      setFuelFillForm({ payerMemberId: "", amount: "", date: new Date() });
+      setEditingExpenseTableRow(null);
+      setExpenseTableRowForm({ payerMemberId: "", amount: "", date: new Date() });
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : editingFuelFill
+          : editingExpenseTableRow
             ? "Failed to update fuel fill"
             : "Failed to add fuel fill"
       );
     }
   }
 
-  function handleEditFuelFill(fuelFill: FuelFill) {
-    setEditingFuelFill(fuelFill);
-    setFuelFillForm({
-      payerMemberId: fuelFill.payer_member_id,
+  function handleEditExpenseTableRow(fuelFill: ExpenseTableRow) {
+    setEditingExpenseTableRow(fuelFill);
+    setExpenseTableRowForm({
+      payerMemberId: fuelFill.payer_id,
       amount: fuelFill.amount.toString(),
       date: new Date(fuelFill.date),
     });
     setDialogOpen(true);
   }
 
-  async function handleDeleteFuelFill(fuelFillId: string) {
+  async function handleDeleteExpenseTableRow(fuelFillId: string) {
     if (!confirm("Are you sure you want to delete this fuel fill?")) return;
 
-    const supabase = createClient();
-
     try {
-      const { error } = await supabase
-        .from("fuel_fills")
-        .delete()
-        .eq("id", fuelFillId);
-
-      if (error) throw error;
-
+      await deleteExpense(fuelFillId);
       toast.success("Fuel fill deleted");
-      setFuelFills(fuelFills.filter((f) => f.id !== fuelFillId));
+      setExpenseTableRows(fuelFills.filter((f) => f.id !== fuelFillId));
     } catch (error) {
       toast.error("Failed to delete fuel fill");
       console.error(error);
     }
   }
 
-  const columns = createFuelFillColumns(
+  const columns = createExpenseColumns(
     car?.currency || "CAD",
-    handleEditFuelFill,
-    handleDeleteFuelFill
+    handleEditExpenseTableRow,
+    handleDeleteExpenseTableRow
   );
 
-  // Filter out archived members from selection
-  const activeMembers = members.filter((m) => !m.archived);
-
-  // Find current user's member ID
-  const currentUserMemberId = members.find((m) => m.user_id === user?.id)?.id;
-
-  // Group members by type
-  const currentUser = activeMembers.find((m) => m.user_id === user?.id);
-  const otherMembers = activeMembers
-    .filter((m) => m.user_id !== user?.id && !m.is_guest)
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const guestMembers = activeMembers
-    .filter((m) => m.is_guest)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const currentUserMemberId = memberGroups.currentUser?.id;
 
   if (loading) {
     return (
@@ -299,8 +206,8 @@ export default function FuelFillsPage() {
           onOpenChange={(open) => {
             setDialogOpen(open);
             if (!open) {
-              setEditingFuelFill(null);
-              setFuelFillForm({ payerMemberId: "", amount: "", date: new Date() });
+              setEditingExpenseTableRow(null);
+              setExpenseTableRowForm({ payerMemberId: "", amount: "", date: new Date() });
             }
           }}
         >
@@ -308,8 +215,8 @@ export default function FuelFillsPage() {
             <Button
               onClick={() => {
                 // Auto-select current user when opening dialog for new entry
-                if (!editingFuelFill && currentUserMemberId) {
-                  setFuelFillForm({
+                if (!editingExpenseTableRow && currentUserMemberId) {
+                  setExpenseTableRowForm({
                     payerMemberId: currentUserMemberId,
                     amount: "",
                     date: new Date(),
@@ -324,21 +231,21 @@ export default function FuelFillsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingFuelFill ? "Edit Fuel Fill" : "Add New Fuel Fill"}
+                {editingExpenseTableRow ? "Edit Fuel Fill" : "Add New Fuel Fill"}
               </DialogTitle>
               <DialogDescription>
-                {editingFuelFill
+                {editingExpenseTableRow
                   ? "Update fuel fill details"
                   : "Record a new fuel purchase"}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmitFuelFill} className="space-y-4">
+            <form onSubmit={handleSubmitExpenseTableRow} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="payer">Paid By</Label>
                 <Select
                   value={fuelFillForm.payerMemberId}
                   onValueChange={(value) =>
-                    setFuelFillForm({ ...fuelFillForm, payerMemberId: value })
+                    setExpenseTableRowForm({ ...fuelFillForm, payerMemberId: value })
                   }
                   required
                 >
@@ -346,30 +253,30 @@ export default function FuelFillsPage() {
                     <SelectValue placeholder="Select member" />
                   </SelectTrigger>
                   <SelectContent>
-                    {currentUser && (
+                    {memberGroups.currentUser && (
                       <SelectGroup>
                         <SelectLabel>You</SelectLabel>
-                        <SelectItem value={currentUser.id}>
-                          {currentUser.name}
+                        <SelectItem value={memberGroups.currentUser.id}>
+                          {memberGroups.currentUser.name || "You"}
                         </SelectItem>
                       </SelectGroup>
                     )}
-                    {otherMembers.length > 0 && (
+                    {memberGroups.ownerMembers.length > 0 && (
                       <SelectGroup>
-                        <SelectLabel>Members</SelectLabel>
-                        {otherMembers.map((member) => (
+                        <SelectLabel>Owners</SelectLabel>
+                        {memberGroups.ownerMembers.map((member) => (
                           <SelectItem key={member.id} value={member.id}>
-                            {member.name}
+                            {member.name || "Unknown"}
                           </SelectItem>
                         ))}
                       </SelectGroup>
                     )}
-                    {guestMembers.length > 0 && (
+                    {memberGroups.guestMembers.length > 0 && (
                       <SelectGroup>
                         <SelectLabel>Guests</SelectLabel>
-                        {guestMembers.map((member) => (
+                        {memberGroups.guestMembers.map((member) => (
                           <SelectItem key={member.id} value={member.id}>
-                            {member.name}
+                            {member.name || "Unknown"}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -386,7 +293,7 @@ export default function FuelFillsPage() {
                   min="0.01"
                   value={fuelFillForm.amount}
                   onChange={(e) =>
-                    setFuelFillForm({
+                    setExpenseTableRowForm({
                       ...fuelFillForm,
                       amount: e.target.value,
                     })
@@ -415,7 +322,7 @@ export default function FuelFillsPage() {
                       captionLayout="dropdown"
                       onSelect={(date) => {
                         if (date) {
-                          setFuelFillForm({ ...fuelFillForm, date });
+                          setExpenseTableRowForm({ ...fuelFillForm, date });
                           setDatePickerOpen(false);
                         }
                       }}
@@ -427,7 +334,7 @@ export default function FuelFillsPage() {
                 </Popover>
               </div>
               <Button type="submit" className="w-full">
-                {editingFuelFill ? "Update Fuel Fill" : "Add Fuel Fill"}
+                {editingExpenseTableRow ? "Update Fuel Fill" : "Add Fuel Fill"}
               </Button>
             </form>
           </DialogContent>

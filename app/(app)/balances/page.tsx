@@ -18,10 +18,11 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
-import { createBalanceColumns, Balance } from "@/components/balances/columns";
+import { BalanceTableRow } from "@/lib/types/balance";
+import { createBalanceColumns } from "@/components/balances/columns";
 
 export default function BalancesPage() {
-  const [balances, setBalances] = useState<Balance[]>([]);
+  const [balances, setBalances] = useState<BalanceTableRow[]>([]);
   const [car, setCar] = useState<CarFromFunction | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -58,17 +59,13 @@ export default function BalancesPage() {
           carData
         );
 
-        // Transform to Balance type for table
-        const balancesForTable: Balance[] = memberBalances.map((mb) => ({
+        // Transform to Balance type for table using helper
+        const balancesForTable: BalanceTableRow[] = memberBalances.map((mb) => ({
+          ...mb,
           member_id: mb.member.id,
-          member_name: mb.member.name || "Unknown",
-          fuel_paid: mb.fuelPaid,
-          trip_usage: mb.tripUsage,
-          settlements_received: mb.settlementsReceived,
-          settlements_sent: mb.settlementsSent,
-          net_balance: mb.netBalance,
-          is_guest: mb.member.role === "guest",
-          user_id: mb.member.user_id,
+          member_name: mb.member.name,
+          member_role: mb.member.role,
+          member_user_id: mb.member.user_id,
         }));
 
         // Sort using service
@@ -79,7 +76,7 @@ export default function BalancesPage() {
           .map((member) =>
             balancesForTable.find((b) => b.member_id === member.id)
           )
-          .filter((b): b is Balance => b !== undefined);
+          .filter((b): b is BalanceTableRow => b !== undefined);
 
         setBalances(finalBalances);
       } catch (error) {

@@ -486,33 +486,66 @@ Will implement clean policies with:
 
 ## Progress Summary
 
-**Current Branch**: `feature/v2-refactor` (7 commits ahead of main)
+**Current Branch**: `feature/auth-improvement`
 
-**Latest Commits**:
+**Latest Session (Complete Database Schema Redesign)**:
+1. Cleared database and started fresh with migration 022
+2. Redesigned schema with learnings from MVP:
+   - `fuel_fills` → `expenses` (supports all expense types)
+   - Roles: `owner`/`guest` with `is_admin` flag
+   - Force metric units (km, litres) in backend
+   - Auto-generated `invite_code` per member
+   - Settlement status tracking (`pending`/`settled`)
+   - Removed phone field (invite via code instead)
+3. Complete type refactor - fixed all type safety issues:
+   - Removed ALL `any` types from codebase
+   - Replaced inline logic with helper functions
+   - All column types use Pick/Omit from database types
+   - Created proper table row types: `BalanceTableRow`, `ExpenseTableRow`, `SettlementTableRow`, `TripTableRow`
+   - Removed obsolete conversion functions
+4. Updated all pages to use new schema
+5. Started Clerk integration (middleware, env vars configured)
+
+**Previous Commits** (Phase 1.1 & 1.2):
 1. Made the plan (PLAN-V2.md)
 2. Added Supabase CLI and types
-3. Phase 1.1 & 1.2 - Database types and code refactoring foundation
-4. Complete Phase 1.2 - Server actions and refactored pages
-5. Use Pick/Omit types in server actions for better type safety
-6. Improve error handling in car queries
-7. Split getUserCarId into focused single-purpose functions
+3. Database types and code refactoring foundation
+4. Server actions and refactored pages
+5. Pick/Omit types in server actions
+6. Error handling improvements
+7. Single-purpose functions
 
-**Files Created/Modified**:
-- `lib/types/` - 7 new type files with helpers (car, member, fuel-fill, trip, settlement, balance, index)
-- `lib/queries/` - 6 query files with error handling (cars, members, fuel-fills, trips, settlements, index)
-- `lib/actions/` - 4 action files with type safety (member, fuel-fill, trip, settlement + index)
-- `lib/services/` - 2 service files for business logic (balance-calculator, member-sorter + index)
-- Updated all page components (balances, fuel, members, settlements, trips, dashboard)
+**Files Created/Modified** (This Session):
+- `supabase/migrations/022_fresh_schema_redesign.sql` - Complete schema redesign
+- `supabase/migrations/023_cleanup_old_functions.sql` - Cleaned up UUID function signatures
+- `lib/types/balance.ts` - Added `BalanceTableRow` type
+- `lib/types/expense.ts` - NEW: Replaced fuel-fill types with expense types
+- `lib/types/member.ts` - Removed phone, added helpers (getFirstName, getInitials)
+- `lib/queries/expenses.ts` - NEW: Replaced fuel-fills queries
+- `lib/actions/expense-actions.ts` - NEW: Generic expense actions
+- `lib/services/balance-calculator.ts` - Made generic for any member type
+- `lib/services/member-sorter.ts` - Added `MemberGroups` export type
+- `components/balances/columns.tsx` - Uses `BalanceTableRow` with Pick/Omit
+- `components/expenses/columns.tsx` - Uses `ExpenseTableRow` with Pick
+- `components/settlements/columns.tsx` - Uses `SettlementTableRow` with Pick
+- `components/trips/columns.tsx` - Uses `TripTableRow` with Pick
+- `components/members/columns.tsx` - Uses `MemberFromFunction` directly
+- Updated ALL pages: balances, fuel, trips, settlements, members, dashboard
+- Removed `lib/queries/fuel-fills.ts` - obsolete
+- Removed phone-related UI components and logic
 - Build passing ✅
 
 **Phase 1.1 & 1.2 Status**: ✅ COMPLETE
 - Type generation workflow established
 - Clean architecture implemented
-- Type safety with Pick/Omit
+- Type safety with Pick/Omit throughout
 - Error handling consistent
 - Single-purpose functions
+- NO `any` types in codebase
+- Helper functions for all repeated logic
+- Column types derived from database types
 
-**Next**: Phase 1.3 - RLS Audit & Cleanup
+**Next**: Phase 2 - Complete Clerk Migration & Invite System
 
 ## Open Questions
 

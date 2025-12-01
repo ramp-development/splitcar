@@ -11,22 +11,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ExpenseFromFunction } from "@/lib/types";
 
-export type FuelFill = {
-  id: string;
-  car_id: string;
-  payer_member_id: string;
-  amount: number;
-  date: string;
-  created_at: string;
-  payer_name: string; // Joined from members table
-};
+// Use Pick to create expense columns type (fuel expenses are just expenses filtered by type)
+export type ExpenseTableRow = Pick<
+  ExpenseFromFunction,
+  "id" | "car_id" | "payer_id" | "amount" | "date" | "created_at" | "payer_name"
+>;
 
-export function createFuelFillColumns(
+export function createExpenseColumns(
   currency: string,
-  onEdit: (fuelFill: FuelFill) => void,
-  onDelete: (fuelFillId: string) => void
-): ColumnDef<FuelFill>[] {
+  onEdit: (expense: ExpenseTableRow) => void,
+  onDelete: (expenseId: string) => void
+): ColumnDef<ExpenseTableRow>[] {
   return [
     {
       accessorKey: "date",
@@ -66,7 +63,7 @@ export function createFuelFillColumns(
     {
       id: "actions",
       cell: ({ row }) => {
-        const fuelFill = row.original;
+        const expense = row.original;
 
         return (
           <DropdownMenu>
@@ -79,12 +76,12 @@ export function createFuelFillColumns(
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onEdit(fuelFill)}>
+              <DropdownMenuItem onClick={() => onEdit(expense)}>
                 Edit
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => onDelete(fuelFill.id)}
+                onClick={() => onDelete(expense.id)}
                 className="text-destructive"
               >
                 Delete

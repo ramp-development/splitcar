@@ -12,15 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { TripFromFunction } from "@/lib/types";
 
-export type Trip = {
-  id: string;
-  car_id: string;
-  name: string | null;
-  distance_km: number;
-  passenger_member_ids: string[];
-  date: string;
-  created_at: string;
+// Trip table row extends TripFromFunction with calculated display fields
+export type TripTableRow = Pick<
+  TripFromFunction,
+  "id" | "car_id" | "name" | "distance" | "passengers" | "date" | "created_at"
+> & {
   passenger_names: string[];
   cost_per_passenger: number;
   total_cost: number;
@@ -29,9 +27,9 @@ export type Trip = {
 export function createTripColumns(
   currency: string,
   distanceUnit: string,
-  onEdit: (trip: Trip) => void,
+  onEdit: (trip: TripTableRow) => void,
   onDelete: (tripId: string) => void
-): ColumnDef<Trip>[] {
+): ColumnDef<TripTableRow>[] {
   return [
     {
       accessorKey: "date",
@@ -58,10 +56,10 @@ export function createTripColumns(
       },
     },
     {
-      accessorKey: "distance_km",
+      accessorKey: "distance",
       header: "Distance",
       cell: ({ row }) => {
-        const distance = parseFloat(row.getValue("distance_km"));
+        const distance = parseFloat(row.getValue("distance"));
         return (
           <span>
             {distance.toFixed(1)} {distanceUnit}

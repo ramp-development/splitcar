@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getUserCarId } from "@/lib/queries/cars";
 import { useAuth } from "@/lib/auth/context";
+import { sortMembersByPriority } from "@/lib/services/member-sorter";
+import { getFirstName } from "@/lib/types/member";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -21,19 +22,20 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
-import { createMemberColumns, Member } from "@/components/members/columns";
+import { createMemberColumns } from "@/components/members/columns";
+import { MemberFromFunction } from "@/lib/types";
 
 export default function MembersPage() {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<MemberFromFunction[]>([]);
   const [carId, setCarId] = useState<string | null>(null);
   const [carName, setCarName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [editingMember, setEditingMember] = useState<MemberFromFunction | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [memberForm, setMemberForm] = useState({
     name: "",
-    phone: "",
+    
     isGuest: false,
   });
   const { user } = useAuth();
@@ -72,20 +74,8 @@ export default function MembersPage() {
 
         if (error) throw error;
 
-        // Sort members: current user first, then members, then guests
-        const sortedMembers = (membersData || []).sort(
-          (a: Member, b: Member) => {
-            if (a.user_id === user.id) return -1;
-            if (b.user_id === user.id) return 1;
-
-            // Then members before guests
-            if (!a.is_guest && b.is_guest) return -1;
-            if (a.is_guest && !b.is_guest) return 1;
-
-            // Within same group, sort alphabetically
-            return a.name.localeCompare(b.name);
-          }
-        );
+        // Sort members using helper function
+        const sortedMembers = sortMembersByPriority(membersData || [], user.id);
 
         setMembers(sortedMembers);
       } catch (error) {
@@ -112,8 +102,8 @@ export default function MembersPage() {
           .from("members")
           .update({
             name: memberForm.name,
-            phone: memberForm.phone || null,
-            is_guest: memberForm.isGuest,
+            
+            role: memberForm.isGuest ? "guest" : "owner",
           })
           .eq("id", editingMember.id);
 
@@ -126,8 +116,8 @@ export default function MembersPage() {
               ? {
                   ...m,
                   name: memberForm.name,
-                  phone: memberForm.phone || null,
-                  is_guest: memberForm.isGuest,
+                  
+                  role: memberForm.isGuest ? "guest" : "owner",
                 }
               : m
           )
@@ -137,8 +127,8 @@ export default function MembersPage() {
         const { error } = await supabase.from("members").insert({
           car_id: carId,
           name: memberForm.name,
-          phone: memberForm.phone || null,
-          is_guest: memberForm.isGuest,
+          
+          role: memberForm.isGuest ? "guest" : "owner",
         });
 
         if (error) throw error;
@@ -148,29 +138,20 @@ export default function MembersPage() {
         // Reload members
         if (!user) return;
 
-        const { data: membersData } = await supabase
-          .from("members")
-          .select("*")
-          .eq("car_id", carId);
+        const { data: membersData } = await supabase.rpc(
+          "get_car_members",
+          { p_user_id: user.id }
+        );
 
-        const sortedMembers = (membersData || []).sort((a, b) => {
-          if (a.user_id === user.id) return -1;
-          if (b.user_id === user.id) return 1;
-
-          // Then members before guests
-          if (!a.is_guest && b.is_guest) return -1;
-          if (a.is_guest && !b.is_guest) return 1;
-
-          // Within same group, sort alphabetically
-          return a.name.localeCompare(b.name);
-        });
+        // Sort members using helper function
+        const sortedMembers = sortMembersByPriority(membersData || [], user.id);
 
         setMembers(sortedMembers);
       }
 
       setDialogOpen(false);
       setEditingMember(null);
-      setMemberForm({ name: "", phone: "", isGuest: false });
+      setMemberForm({ name: "",  isGuest: false });
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -182,12 +163,12 @@ export default function MembersPage() {
     }
   }
 
-  function handleEditMember(member: Member) {
+  function handleEditMember(member: MemberFromFunction) {
     setEditingMember(member);
     setMemberForm({
       name: member.name,
-      phone: member.phone || "",
-      isGuest: member.is_guest,
+      
+      isGuest: member.role === "guest",
     });
     setDialogOpen(true);
   }
@@ -219,15 +200,15 @@ export default function MembersPage() {
     try {
       const { error } = await supabase
         .from("members")
-        .update({ is_guest: isGuest })
+        .update({ role: isGuest ? "guest" : "owner" })
         .eq("id", memberId);
 
       if (error) throw error;
 
-      toast.success(isGuest ? "Changed to guest" : "Changed to member");
+      toast.success(isGuest ? "Changed to guest" : "Changed to owner");
       setMembers(
         members.map((m) =>
-          m.id === memberId ? { ...m, is_guest: isGuest } : m
+          m.id === memberId ? { ...m, role: isGuest ? "guest" : "owner" } : m
         )
       );
     } catch (error) {
@@ -236,15 +217,10 @@ export default function MembersPage() {
     }
   }
 
-  async function handleInviteMember(member: Member) {
-    if (!member.phone) {
-      toast.error("Member has no phone number");
-      return;
-    }
-
-    // Create invite URL with phone number as parameter
-    const inviteUrl = `${window.location.origin}/login?phone=${encodeURIComponent(member.phone)}`;
-    const inviteMessage = `Hi ${member.name.split(" ")[0]}! You've been added to our SplitCar group. Click here to join: ${inviteUrl}`;
+  async function handleInviteMember(member: MemberFromFunction) {
+    // Create invite URL with invite code
+    const inviteUrl = `${window.location.origin}/login?invite=${member.invite_code}`;
+    const inviteMessage = `Hi ${getFirstName(member.name)}! You've been added to our SplitCar group. Click here to join: ${inviteUrl}`;
 
     // Try Web Share API first (mobile-friendly)
     if (navigator.share) {
@@ -322,7 +298,7 @@ export default function MembersPage() {
               setDialogOpen(open);
               if (!open) {
                 setEditingMember(null);
-                setMemberForm({ name: "", phone: "", isGuest: false });
+                setMemberForm({ name: "",  isGuest: false });
               }
             }}
           >
@@ -354,20 +330,6 @@ export default function MembersPage() {
                     }
                     required
                     placeholder="John Doe"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="member-phone">Phone (optional)</Label>
-                  <PhoneInput
-                    id="member-phone"
-                    value={memberForm.phone}
-                    onChange={(value: string) =>
-                      setMemberForm({
-                        ...memberForm,
-                        phone: value,
-                      })
-                    }
-                    placeholder="Enter phone number"
                   />
                 </div>
                 <div className="flex items-center justify-between">
