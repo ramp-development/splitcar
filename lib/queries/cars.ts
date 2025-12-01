@@ -1,16 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-
-type Car = {
-  id: string;
-  owner_id: string;
-  name: string;
-  currency: string;
-  distance_unit: string;
-  fuel_unit: string;
-  efficiency_km_per_litre: number;
-  avg_price_per_litre: number;
-  created_at: string;
-};
+import { Car } from "@/lib/types";
 
 /**
  * Gets the car ID that a user has access to (either as owner or member)
@@ -27,8 +16,6 @@ export async function getUserCarId(
     .eq("owner_id", userId)
     .maybeSingle();
 
-  console.log("[getUserCarId] Owned car check:", { ownedCar, ownedCarError });
-
   if (ownedCar) {
     return ownedCar.id;
   }
@@ -39,8 +26,6 @@ export async function getUserCarId(
     .select("car_id, user_id")
     .eq("user_id", userId)
     .maybeSingle();
-
-  console.log("[getUserCarId] Membership check:", { userId, membership, membershipError });
 
   return membership?.car_id || null;
 }
@@ -64,5 +49,5 @@ export async function getUserCar(
   }
 
   // The function returns an array, get the first item
-  return data?.[0] || null;
+  return (data?.[0] as Car) || null;
 }
