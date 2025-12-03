@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth/context";
-import { Button } from "@/components/ui/button";
+import { usePathname } from "next/navigation";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -11,17 +9,11 @@ import {
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { LogOut } from "lucide-react";
+import { UserButton, useUser } from "@clerk/nextjs";
 
 export function AppNavbar() {
-  const { signOut } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.push("/login");
-  };
+  const { user } = useUser();
 
   const navigationItems = [
     {
@@ -29,8 +21,8 @@ export function AppNavbar() {
       href: "/members",
     },
     {
-      label: "Fuel",
-      href: "/fuel",
+      label: "Expenses",
+      href: "/expenses",
     },
     {
       label: "Trips",
@@ -50,7 +42,7 @@ export function AppNavbar() {
     <header className="border-b">
       <div className="flex h-16 items-center px-4 md:px-6 mx-auto max-w-6xl">
         <div className="flex items-center gap-6 md:gap-10">
-          <Link href="/dashboard" className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2">
             <span className="text-xl font-bold">SplitCar</span>
           </Link>
 
@@ -71,11 +63,20 @@ export function AppNavbar() {
           </NavigationMenu>
         </div>
 
-        <div className="ml-auto">
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </Button>
+        <div className="ml-auto flex items-center gap-4">
+          {user && (
+            <span className="hidden sm:inline text-sm text-muted-foreground">
+              {user.firstName}
+            </span>
+          )}
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: "h-9 w-9",
+              },
+            }}
+            afterSignOutUrl="/"
+          />
         </div>
       </div>
     </header>

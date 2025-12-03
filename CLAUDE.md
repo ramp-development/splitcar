@@ -17,23 +17,31 @@ SplitCar is a web application for tracking fuel fills, logging trips, and splitt
 
 ## Common Commands
 
+**IMPORTANT: This project uses `pnpm` as the package manager. Always use `pnpm` instead of `npm`.**
+
 **Development:**
 
 ```bash
-npm run dev     # Start development server (uses Turbopack)
+pnpm dev     # Start development server (uses Turbopack)
 ```
 
 **Build & Production:**
 
 ```bash
-npm run build   # Build for production
-npm start       # Start production server
+pnpm build   # Build for production
+pnpm start   # Start production server
 ```
 
 **Linting:**
 
 ```bash
-npm run lint    # Run ESLint
+pnpm lint    # Run ESLint
+```
+
+**Type Generation:**
+
+```bash
+pnpm types:generate  # Generate Supabase database types
 ```
 
 ## Architecture

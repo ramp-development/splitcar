@@ -11,15 +11,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-const routeNames: Record<string, string> = {
-  dashboard: "Dashboard",
-  members: "Members",
-  fuel: "Fuel Fills",
-  trips: "Trips",
-  balances: "Balances",
-  settlements: "Settlements",
-};
-
 export function AppBreadcrumb() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
@@ -27,6 +18,9 @@ export function AppBreadcrumb() {
   if (segments.length === 0 || segments[0] === "dashboard") {
     return null; // Don't show breadcrumbs on dashboard
   }
+
+  const capitalize = (str: string) =>
+    str.charAt(0).toUpperCase() + str.slice(1);
 
   return (
     <div className="border-b bg-muted/20 py-3">
@@ -41,7 +35,7 @@ export function AppBreadcrumb() {
             {segments.map((segment, index) => {
               const isLast = index === segments.length - 1;
               const href = `/${segments.slice(0, index + 1).join("/")}`;
-              const label = routeNames[segment] || segment;
+              const label = capitalize(segment);
 
               return (
                 <span key={segment} className="contents">

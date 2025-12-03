@@ -202,7 +202,7 @@ export default function SettlementsPage() {
     <DataTable
       columns={columns}
       data={settlements}
-      filterColumn="from_member_name"
+      filterColumn="from_name"
       filterPlaceholder="Filter by sender..."
       toolbarActions={
         <Dialog

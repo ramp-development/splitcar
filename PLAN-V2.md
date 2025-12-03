@@ -545,7 +545,18 @@ Will implement clean policies with:
 - Helper functions for all repeated logic
 - Column types derived from database types
 
-**Next**: Phase 2 - Complete Clerk Migration & Invite System
+**Phase 2.1: Clerk Migration**: ✅ COMPLETE
+- ✅ Clerk SDK installed and configured
+- ✅ Middleware protecting all routes (secure by default)
+- ✅ Landing page with Clerk sign-in/sign-up buttons
+- ✅ App navbar with `<UserButton>` and first name display
+- ✅ Dashboard with onboarding modal (car setup form)
+- ✅ Users synced to Supabase (Clerk ID + full name)
+- ✅ All pages working with Clerk auth via `useAuth()` wrapper hook
+- ✅ Removed old Supabase auth pages and components
+- ✅ Breadcrumb uses capitalize helper instead of mapping
+
+**Next**: Phase 2.2 - Implement Invite System with shareable codes
 
 ## Open Questions
 

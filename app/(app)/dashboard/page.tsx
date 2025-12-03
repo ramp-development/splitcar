@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/client";
 import { getUserCar } from "@/lib/queries/cars";
-import { getFirstName } from "@/lib/types/member";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,60 +12,55 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CarSetupForm } from "@/components/car/car-setup-form";
 import { useRouter } from "next/navigation";
 import {
   CarIcon,
-  FuelIcon,
   HandshakeIcon,
+  ReceiptIcon,
   UsersIcon,
   WalletIcon,
 } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
+import { CarOnboardingForm } from "@/components/car/car-onboarding-form";
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const [userName, setUserName] = useState<string | null>(null);
+  const { user: authUser } = useAuth();
+  const { user: clerkUser } = useUser();
   const [carName, setCarName] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [hasCar, setHasCar] = useState(false);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    async function checkUserProfile() {
-      if (!user) return;
+    async function checkUserCar() {
+      if (!authUser || !clerkUser) return;
 
       const supabase = createClient();
 
-      // Check user profile
-      const { data: userData } = await supabase
-        .from("users")
-        .select("name")
-        .eq("id", user.id)
-        .single();
+      // Ensure user exists in database with name from Clerk
+      const fullName =
+        `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim();
 
-      if (!userData?.name) {
-        router.push("/onboarding");
-        return;
-      }
+      await supabase.from("users").upsert(
+        {
+          id: authUser.id,
+          name: fullName || "User",
+        },
+        {
+          onConflict: "id",
+        }
+      );
 
       // Get car details using function (bypasses RLS)
-      const carData = await getUserCar(supabase, user.id);
+      const carData = await getUserCar(supabase, authUser.id);
 
-      console.log("[DASHBOARD DEBUG] User ID:", user.id);
-      console.log("[DASHBOARD DEBUG] Car data:", carData);
-
-      setUserName(userData.name);
       setCarName(carData?.name || null);
       setHasCar(!!carData);
       setLoading(false);
     }
 
-    checkUserProfile();
-  }, [user, router]);
-
-  const handleCarCreated = () => {
-    setHasCar(true);
-  };
+    checkUserCar();
+  }, [authUser, clerkUser]);
 
   if (loading) {
     return (
@@ -83,9 +77,9 @@ export default function DashboardPage() {
       icon: <UsersIcon className="w-4 h-4" />,
     },
     {
-      label: "Fuel",
-      href: "/fuel",
-      icon: <FuelIcon className="w-4 h-4" />,
+      label: "Expenses",
+      href: "/expenses",
+      icon: <ReceiptIcon className="w-4 h-4" />,
     },
     {
       label: "Trips",
@@ -104,31 +98,43 @@ export default function DashboardPage() {
     },
   ];
 
+  const handleCarCreated = () => {
+    setHasCar(true);
+    router.refresh();
+  };
+
   return (
     <>
-      <Dialog open={!hasCar} onOpenChange={() => {}}>
+      {/* Car Setup Modal */}
+      <Dialog open={!hasCar && !loading} onOpenChange={() => {}}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Set Up Your Car</DialogTitle>
+            <DialogTitle>Welcome to SplitCar!</DialogTitle>
             <DialogDescription>
-              Add your car details to start tracking expenses
+              Let&apos;s set up your car to start tracking costs
             </DialogDescription>
           </DialogHeader>
-          {user && (
-            <CarSetupForm userId={user.id} onSuccess={handleCarCreated} />
+          {authUser && (
+            <CarOnboardingForm
+              userId={authUser.id}
+              onSuccess={handleCarCreated}
+            />
           )}
         </DialogContent>
       </Dialog>
 
+      {/* Dashboard Content */}
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold mb-1">
-            Welcome back, {getFirstName(userName)}!
+            Welcome back{clerkUser?.firstName ? `, ${clerkUser.firstName}` : ""}
+            !
           </h1>
           <p className="text-muted-foreground">Your SplitCar overview</p>
           {carName && (
             <p className="text-sm text-muted-foreground mt-2">
-              Car: <span className="font-medium text-foreground">{carName}</span>
+              Car:{" "}
+              <span className="font-medium text-foreground">{carName}</span>
             </p>
           )}
         </div>

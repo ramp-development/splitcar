@@ -6,8 +6,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import Link from "next/link";
 import { Car, Users, Receipt, Calculator } from "lucide-react";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignOutButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs";
+import Link from "next/link";
 
 export default function LandingPage() {
   return (
@@ -20,14 +28,30 @@ export default function LandingPage() {
             Fair car cost tracking for group trips. Track fuel fills, log trips,
             and split costs automatically.
           </p>
-          <div className="mt-8 flex justify-center gap-4">
-            <Button size="lg" asChild>
-              <Link href="/login">Get Started</Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/login">Sign In</Link>
-            </Button>
-          </div>
+          <SignedOut>
+            <div className="mt-8 flex justify-center gap-4">
+              <SignUpButton mode="modal" forceRedirectUrl="/dashboard">
+                <Button size="lg">Get Started</Button>
+              </SignUpButton>
+              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                <Button size="lg" variant="outline">
+                  Sign In
+                </Button>
+              </SignInButton>
+            </div>
+          </SignedOut>
+          <SignedIn>
+            <div className="mt-8 flex justify-center gap-4">
+              <Link href="/dashboard">
+                <Button size="lg">Dashboard</Button>
+              </Link>
+              <SignOutButton>
+                <Button size="lg" variant="outline">
+                  Sign Out
+                </Button>
+              </SignOutButton>
+            </div>
+          </SignedIn>
         </div>
 
         {/* Features */}
@@ -121,9 +145,9 @@ export default function LandingPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="lg" asChild>
-                <Link href="/login">Start Tracking Now</Link>
-              </Button>
+              <SignUpButton mode="modal" forceRedirectUrl="/dashboard">
+                <Button size="lg">Start Tracking Now</Button>
+              </SignUpButton>
             </CardContent>
           </Card>
         </div>
