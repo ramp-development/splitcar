@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
 import { getUserCar } from "@/lib/queries/cars";
-import { getCarMembers } from "@/lib/queries/members";
+import { getCarMembers, MemberWithUser } from "@/lib/queries/members";
 import { getCarTrips } from "@/lib/queries/trips";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,14 +31,6 @@ import { Plus, ChevronDownIcon } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { createTripColumns, TripTableRow } from "@/components/trips/columns";
 
-type Member = {
-  id: string;
-  name: string;
-  archived: boolean;
-  user_id: string | null;
-  is_guest: boolean;
-};
-
 type Car = {
   id: string;
   currency: string;
@@ -49,7 +41,7 @@ type Car = {
 
 export default function TripsPage() {
   const [trips, setTrips] = useState<TripTableRow[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<MemberWithUser[]>([]);
   const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -99,7 +91,7 @@ export default function TripsPage() {
             // Get passenger names
             const passengerNames = (trip.passengers || [])
               .map((id: string) => {
-                const member = membersData?.find((m: Member) => m.id === id);
+                const member = membersData.find((m) => m.id === id);
                 return member?.name || "Unknown";
               })
               .filter(Boolean);
@@ -288,18 +280,18 @@ export default function TripsPage() {
   // Find current user's member ID
   const currentUserMemberId = members.find((m) => m.user_id === user?.id)?.id;
 
-  // Sort passengers: current user first, then members, then guests
+  // Sort passengers: current user first, then owners, then guests
   const sortedPassengers = activeMembers.sort((a, b) => {
     // Current user always first
     if (a.user_id === user?.id) return -1;
     if (b.user_id === user?.id) return 1;
 
-    // Then members before guests
-    if (!a.is_guest && b.is_guest) return -1;
-    if (a.is_guest && !b.is_guest) return 1;
+    // Then owners before guests
+    if (a.role === "owner" && b.role === "guest") return -1;
+    if (a.role === "guest" && b.role === "owner") return 1;
 
     // Within same group, sort alphabetically
-    return a.name.localeCompare(b.name);
+    return (a.name || "").localeCompare(b.name || "");
   });
 
   if (loading) {
@@ -407,7 +399,7 @@ export default function TripsPage() {
                     const prevMember =
                       index > 0 ? sortedPassengers[index - 1] : null;
                     const showSeparator =
-                      prevMember && !prevMember.is_guest && member.is_guest;
+                      prevMember && prevMember.role === "owner" && member.role === "guest";
 
                     return (
                       <React.Fragment key={member.id}>

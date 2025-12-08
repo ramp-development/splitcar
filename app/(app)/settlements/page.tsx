@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
 import { getUserCar } from "@/lib/queries/cars";
-import { getCarMembers } from "@/lib/queries/members";
+import { getCarMembers, MemberWithUser } from "@/lib/queries/members";
 import { getCarSettlements } from "@/lib/queries/settlements";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -35,14 +35,6 @@ import {
   SettlementTableRow,
 } from "@/components/settlements/columns";
 
-type Member = {
-  id: string;
-  name: string;
-  archived: boolean;
-  user_id: string | null;
-  role: "owner" | "guest";
-};
-
 type Car = {
   id: string;
   currency: string;
@@ -50,7 +42,7 @@ type Car = {
 
 export default function SettlementsPage() {
   const [settlements, setSettlements] = useState<SettlementTableRow[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<MemberWithUser[]>([]);
   const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
