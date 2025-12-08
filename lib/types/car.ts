@@ -5,10 +5,6 @@ export type Car = Database["public"]["Tables"]["cars"]["Row"];
 export type CarInsert = Database["public"]["Tables"]["cars"]["Insert"];
 export type CarUpdate = Database["public"]["Tables"]["cars"]["Update"];
 
-// Type from database function
-export type CarFromFunction =
-  Database["public"]["Functions"]["get_user_car"]["Returns"][number];
-
 // Extended types with computed properties
 export type CarWithMetrics = Car & {
   costPerKm: number;

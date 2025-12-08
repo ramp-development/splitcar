@@ -5,10 +5,6 @@ export type Expense = Database["public"]["Tables"]["expenses"]["Row"];
 export type ExpenseInsert = Database["public"]["Tables"]["expenses"]["Insert"];
 export type ExpenseUpdate = Database["public"]["Tables"]["expenses"]["Update"];
 
-// Type from database function (includes payer name)
-export type ExpenseFromFunction =
-  Database["public"]["Functions"]["get_car_expenses"]["Returns"][number];
-
 // Common expense types (for UI chips)
 export const EXPENSE_TYPES = [
   "Fuel",

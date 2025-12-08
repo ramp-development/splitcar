@@ -8,10 +8,6 @@ export type SettlementUpdate =
   Database["public"]["Tables"]["settlements"]["Update"];
 export type SettlementStatus = Database["public"]["Enums"]["settlement_status"];
 
-// Type from database function (includes member names)
-export type SettlementFromFunction =
-  Database["public"]["Functions"]["get_car_settlements"]["Returns"][number];
-
 // Helper functions
 export function isSettlementPending(settlement: Settlement): boolean {
   return settlement.status === "pending";

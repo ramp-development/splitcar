@@ -1,5 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import { Car, CarFromFunction } from "@/lib/types";
+import { Car, CarInsert, CarUpdate } from "@/lib/types";
 
 /**
  * Gets the car ID that a user has access to (as admin or member)
@@ -26,7 +26,6 @@ export async function getUserCarId(
 
 /**
  * Gets the full car details that a user has access to
- * Uses a database function to bypass RLS
  * Returns null if user has no car access
  * Throws error if database query fails
  */
@@ -34,16 +33,15 @@ export async function getUserCar(
   supabase: SupabaseClient,
   userId: string
 ): Promise<Car | null> {
-  const { data, error } = await supabase.rpc("get_user_car", {
-    p_user_id: userId,
-  });
+  // First get the user's car_id
+  const carId = await getUserCarId(supabase, userId);
 
-  if (error) {
-    throw new Error(`Failed to fetch user car: ${error.message}`);
+  if (!carId) {
+    return null;
   }
 
-  // The function returns an array, get the first item
-  return (data?.[0] as CarFromFunction) || null;
+  // Then get the full car details
+  return getCarById(supabase, carId);
 }
 
 /**
@@ -65,4 +63,66 @@ export async function getCarById(
   }
 
   return data;
+}
+
+/**
+ * Creates a new car
+ * Returns the created car
+ * Throws error if database query fails
+ */
+export async function createCar(
+  supabase: SupabaseClient,
+  car: CarInsert
+): Promise<Car> {
+  const { data, error } = await supabase
+    .from("cars")
+    .insert(car)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to create car: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Updates a car by ID
+ * Returns the updated car
+ * Throws error if database query fails
+ */
+export async function updateCar(
+  supabase: SupabaseClient,
+  carId: string,
+  updates: CarUpdate
+): Promise<Car> {
+  const { data, error } = await supabase
+    .from("cars")
+    .update(updates)
+    .eq("id", carId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update car: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Deletes a car by ID
+ * Cascades to all related data (members, expenses, trips, settlements)
+ * Throws error if database query fails
+ */
+export async function deleteCar(
+  supabase: SupabaseClient,
+  carId: string
+): Promise<void> {
+  const { error } = await supabase.from("cars").delete().eq("id", carId);
+
+  if (error) {
+    throw new Error(`Failed to delete car: ${error.message}`);
+  }
 }

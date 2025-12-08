@@ -6,10 +6,6 @@ export type MemberInsert = Database["public"]["Tables"]["members"]["Insert"];
 export type MemberUpdate = Database["public"]["Tables"]["members"]["Update"];
 export type MemberRole = Database["public"]["Enums"]["member_role"];
 
-// Type from database function (includes joined user name)
-export type MemberFromFunction =
-  Database["public"]["Functions"]["get_car_members"]["Returns"][number];
-
 // Member status based on user_id and joined_at
 export type MemberStatus = "joined" | "pending";
 

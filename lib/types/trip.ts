@@ -6,10 +6,6 @@ export type Trip = Database["public"]["Tables"]["trips"]["Row"];
 export type TripInsert = Database["public"]["Tables"]["trips"]["Insert"];
 export type TripUpdate = Database["public"]["Tables"]["trips"]["Update"];
 
-// Type from database function
-export type TripFromFunction =
-  Database["public"]["Functions"]["get_car_trips"]["Returns"][number];
-
 // Extended type with calculated cost
 export type TripWithCost = Trip & {
   totalCost: number;
