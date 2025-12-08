@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getUserCarId } from "@/lib/queries/cars";
+import { getCarMembers } from "@/lib/queries/members";
 import { useAuth } from "@/lib/auth/context";
 import { sortMembersByPriority } from "@/lib/services/member-sorter";
 import { getFirstName } from "@/lib/types/member";
@@ -66,16 +67,11 @@ export default function MembersPage() {
         setCarId(carIdResult);
         setCarName(carData?.name || "");
 
-        // Get members using function to bypass RLS infinite recursion
-        const { data: membersData, error } = await supabase.rpc(
-          "get_car_members",
-          { p_user_id: user.id }
-        );
-
-        if (error) throw error;
+        // Get members using new query function
+        const membersData = await getCarMembers(supabase, user.id);
 
         // Sort members using helper function
-        const sortedMembers = sortMembersByPriority(membersData || [], user.id);
+        const sortedMembers = sortMembersByPriority(membersData, user.id);
 
         setMembers(sortedMembers);
       } catch (error) {
@@ -138,13 +134,10 @@ export default function MembersPage() {
         // Reload members
         if (!user) return;
 
-        const { data: membersData } = await supabase.rpc(
-          "get_car_members",
-          { p_user_id: user.id }
-        );
+        const membersData = await getCarMembers(supabase, user.id);
 
         // Sort members using helper function
-        const sortedMembers = sortMembersByPriority(membersData || [], user.id);
+        const sortedMembers = sortMembersByPriority(membersData, user.id);
 
         setMembers(sortedMembers);
       }

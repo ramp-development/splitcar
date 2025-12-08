@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Calculator, Car, Receipt, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
 import { ReactNode } from "react";
 
 export default function HeroSection() {
@@ -59,15 +59,24 @@ export default function HeroSection() {
                 automatically calculate fair cost splits for group travel.
               </p>
 
-              <div className="mt-12 flex flex-col items-center justify-center gap-2 md:flex-row">
-                <SignUpButton mode="modal" forceRedirectUrl="/dashboard">
-                  <Button size="lg">Get Started</Button>
-                </SignUpButton>
-                <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                  <Button size="lg" variant="outline">
-                    Sign In
+              <div className="mt-12">
+                <SignedIn>
+                  <Button size="lg" asChild>
+                    <Link href="/dashboard">Dashboard</Link>
                   </Button>
-                </SignInButton>
+                </SignedIn>
+                <SignedOut>
+                  <div className="flex flex-col items-center justify-center gap-2 md:flex-row">
+                    <SignUpButton mode="modal" forceRedirectUrl="/dashboard">
+                      <Button size="lg">Get Started</Button>
+                    </SignUpButton>
+                    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                      <Button size="lg" variant="outline">
+                        Sign In
+                      </Button>
+                    </SignInButton>
+                  </div>
+                </SignedOut>
               </div>
             </div>
           </div>

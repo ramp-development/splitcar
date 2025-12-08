@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
 import { getUserCar } from "@/lib/queries/cars";
+import { getCarMembers } from "@/lib/queries/members";
+import { getCarSettlements } from "@/lib/queries/settlements";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -76,25 +78,14 @@ export default function SettlementsPage() {
 
         setCar({ id: carData.id, currency: carData.currency || "CAD" });
 
-        // Get members using function (bypasses RLS)
-        const { data: allMembers, error: membersError } = await supabase.rpc(
-          "get_car_members",
-          { p_user_id: user.id }
-        );
+        // Get members using new query function
+        const membersData = await getCarMembers(supabase, user.id);
+        setMembers(membersData);
 
-        if (membersError) throw membersError;
-        setMembers(allMembers || []);
+        // Get settlements using new query function
+        const settlementsData = await getCarSettlements(supabase, user.id);
 
-        // Get settlements using function (bypasses RLS)
-        const { data: settlementsData, error: settlementsError } =
-          await supabase.rpc("get_car_settlements", { p_user_id: user.id });
-
-        if (settlementsError) throw settlementsError;
-
-        // Transform settlements data using helper
-        const transformedSettlements = settlementsData || [];
-
-        setSettlements(transformedSettlements);
+        setSettlements(settlementsData);
       } catch (error) {
         console.error(error);
         toast.error("Failed to load settlements");
@@ -130,16 +121,11 @@ export default function SettlementsPage() {
 
       toast.success("Settlement recorded!");
 
-      // Reload settlements using RPC function
+      // Reload settlements
       if (!user) return;
-      const { data: settlementsData } = await supabase.rpc(
-        "get_car_settlements",
-        { p_user_id: user.id }
-      );
+      const settlementsData = await getCarSettlements(supabase, user.id);
 
-      const transformedSettlements = settlementsData || [];
-
-      setSettlements(transformedSettlements);
+      setSettlements(settlementsData);
       setDialogOpen(false);
       setSettlementForm({ fromMemberId: "", toMemberId: "", amount: "" });
     } catch (error) {

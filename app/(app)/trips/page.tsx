@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/context";
 import { getUserCar } from "@/lib/queries/cars";
+import { getCarMembers } from "@/lib/queries/members";
+import { getCarTrips } from "@/lib/queries/trips";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,27 +86,16 @@ export default function TripsPage() {
           default_price_per_litre: carData.default_price_per_litre || 0,
         });
 
-        // Get members using function (bypasses RLS)
-        const { data: allMembers, error: membersError } = await supabase.rpc(
-          "get_car_members",
-          { p_user_id: user.id }
-        );
-
-        if (membersError) throw membersError;
-        const membersData = allMembers || [];
+        // Get members using new query function
+        const membersData = await getCarMembers(supabase, user.id);
         setMembers(membersData);
 
-        // Get trips using function (bypasses RLS)
-        const { data: tripsData, error: tripsError } = await supabase.rpc(
-          "get_car_trips",
-          { p_user_id: user.id }
-        );
-
-        if (tripsError) throw tripsError;
+        // Get trips using new query function
+        const tripsData = await getCarTrips(supabase, user.id);
 
         // Transform trips data
         const transformedTrips = await Promise.all(
-          (tripsData || []).map(async (trip: TripTableRow) => {
+          tripsData.map(async (trip) => {
             // Get passenger names
             const passengerNames = (trip.passengers || [])
               .map((id: string) => {
