@@ -1,19 +1,19 @@
-import { MemberFromFunction } from "@/lib/types";
+import { MemberWithUser } from "@/lib/queries/members";
 
 export type MemberGroups = {
-  currentUser: MemberFromFunction | null;
-  ownerMembers: MemberFromFunction[];
-  guestMembers: MemberFromFunction[];
-  activeMembers: MemberFromFunction[];
+  currentUser: MemberWithUser | null;
+  ownerMembers: MemberWithUser[];
+  guestMembers: MemberWithUser[];
+  activeMembers: MemberWithUser[];
 };
 
 /**
  * Sort members by priority: admin first, current user, owners, guests, then by join date
  */
 export function sortMembersByPriority(
-  members: MemberFromFunction[],
+  members: MemberWithUser[],
   currentUserId: string | null
-): MemberFromFunction[] {
+): MemberWithUser[] {
   return [...members].sort((a, b) => {
     // Current user first
     if (a.user_id === currentUserId && b.user_id !== currentUserId) return -1;
@@ -42,7 +42,7 @@ export function sortMembersByPriority(
  * Group members into categories for select dropdowns
  */
 export function groupMembersForSelect(
-  members: MemberFromFunction[],
+  members: MemberWithUser[],
   currentUserId: string | null
 ): MemberGroups {
   const activeMembers = members.filter((m) => !m.archived);

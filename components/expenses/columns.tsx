@@ -11,11 +11,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ExpenseFromFunction } from "@/lib/types";
+import { ExpenseWithPayer } from "@/lib/queries/expenses";
 
 // Use Pick to create expense columns type (fuel expenses are just expenses filtered by type)
 export type ExpenseTableRow = Pick<
-  ExpenseFromFunction,
+  ExpenseWithPayer,
   "id" | "car_id" | "payer_id" | "amount" | "date" | "created_at" | "payer_name"
 >;
 

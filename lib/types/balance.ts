@@ -13,7 +13,7 @@ export type MemberBalance<T extends { id: string; archived?: boolean | null } = 
 // Flattened balance type for table display (using Pick from MemberBalance + member fields)
 export type BalanceTableRow = Omit<MemberBalance, "member"> & {
   member_id: string;
-  member_name: string;
+  member_name: string | null;
   member_role: "owner" | "guest";
   member_user_id: string | null;
 };

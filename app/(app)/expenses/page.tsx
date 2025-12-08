@@ -12,7 +12,7 @@ import {
   groupMembersForSelect,
   MemberGroups,
 } from "@/lib/services/member-sorter";
-import { CarFromFunction } from "@/lib/types";
+import { Car } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +49,7 @@ import {
 
 export default function ExpenseTableRowsPage() {
   const [fuelFills, setExpenseTableRows] = useState<ExpenseTableRow[]>([]);
-  const [car, setCar] = useState<CarFromFunction | null>(null);
+  const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingExpenseTableRow, setEditingExpenseTableRow] =
@@ -85,7 +85,7 @@ export default function ExpenseTableRowsPage() {
           return;
         }
 
-        setCar(carData as CarFromFunction);
+        setCar(carData);
 
         // Get members and expenses
         const [members, expenses] = await Promise.all([

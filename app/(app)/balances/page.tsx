@@ -13,7 +13,7 @@ import {
 } from "@/lib/queries";
 import { calculateMemberBalances } from "@/lib/services";
 import { sortMembersByPriority } from "@/lib/services/member-sorter";
-import { CarFromFunction } from "@/lib/types";
+import { Car } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
@@ -23,7 +23,7 @@ import { createBalanceColumns } from "@/components/balances/columns";
 
 export default function BalancesPage() {
   const [balances, setBalances] = useState<BalanceTableRow[]>([]);
-  const [car, setCar] = useState<CarFromFunction | null>(null);
+  const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const router = useRouter();
@@ -42,7 +42,7 @@ export default function BalancesPage() {
           return;
         }
 
-        setCar(carData as CarFromFunction);
+        setCar(carData);
 
         // Get all data using query functions
         const activeMembers = await getActiveMembers(supabase, user.id);

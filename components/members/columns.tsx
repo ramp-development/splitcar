@@ -13,9 +13,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { MemberFromFunction } from "@/lib/types";
+import { MemberWithUser } from "@/lib/queries/members";
 
-export type Member = MemberFromFunction;
+export type Member = MemberWithUser;
 
 export function createMemberColumns(
   currentUserId: string | undefined,

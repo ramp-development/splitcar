@@ -10,11 +10,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SettlementFromFunction } from "@/lib/types";
+import { SettlementWithNames } from "@/lib/queries/settlements";
 
 // Use Pick to select only the fields needed for display
 export type SettlementTableRow = Pick<
-  SettlementFromFunction,
+  SettlementWithNames,
   "id" | "car_id" | "from_id" | "to_id" | "amount" | "created_at" | "from_name" | "to_name"
 >;
 

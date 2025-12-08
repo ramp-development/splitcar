@@ -23,15 +23,15 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { createMemberColumns } from "@/components/members/columns";
-import { MemberFromFunction } from "@/lib/types";
+import { MemberWithUser } from "@/lib/queries/members";
 
 export default function MembersPage() {
-  const [members, setMembers] = useState<MemberFromFunction[]>([]);
+  const [members, setMembers] = useState<MemberWithUser[]>([]);
   const [carId, setCarId] = useState<string | null>(null);
   const [carName, setCarName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<MemberFromFunction | null>(null);
+  const [editingMember, setEditingMember] = useState<MemberWithUser | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [memberForm, setMemberForm] = useState({
     name: "",
@@ -163,11 +163,11 @@ export default function MembersPage() {
     }
   }
 
-  function handleEditMember(member: MemberFromFunction) {
+  function handleEditMember(member: MemberWithUser) {
     setEditingMember(member);
     setMemberForm({
-      name: member.name,
-      
+      name: member.name || "",
+
       isGuest: member.role === "guest",
     });
     setDialogOpen(true);
@@ -217,7 +217,7 @@ export default function MembersPage() {
     }
   }
 
-  async function handleInviteMember(member: MemberFromFunction) {
+  async function handleInviteMember(member: MemberWithUser) {
     // Create invite URL with invite code
     const inviteUrl = `${window.location.origin}/login?invite=${member.invite_code}`;
     const inviteMessage = `Hi ${getFirstName(member.name)}! You've been added to our SplitCar group. Click here to join: ${inviteUrl}`;

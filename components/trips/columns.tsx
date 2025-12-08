@@ -12,11 +12,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { TripFromFunction } from "@/lib/types";
+import { Trip } from "@/lib/types";
 
-// Trip table row extends TripFromFunction with calculated display fields
+// Trip table row extends Trip with calculated display fields
 export type TripTableRow = Pick<
-  TripFromFunction,
+  Trip,
   "id" | "car_id" | "name" | "distance" | "passengers" | "date" | "created_at"
 > & {
   passenger_names: string[];
